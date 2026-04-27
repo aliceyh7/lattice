@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String         @id @default(cuid())
+  clerkId             String         @unique
+  email               String         @unique
+  name                String?
+  timezone            String         @default("America/Los_Angeles")
+  weeklyCapacityHours Int            @default(21)
+  createdAt           DateTime       @default(now())
+  roadmaps            Roadmap[]
+  sessions            StudySession[]
+}
+
+enum RoadmapStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum Domain {
+  ML_RECSYS
+  LEETCODE
+  MATH_STATS
+  CPP_SYSTEMS
+  DISTRIBUTED_TRAINING
+  REVIEW
+  OTHER
+}
+
+model Roadmap {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  domain      Domain
+  description String?
+  targetRole  String?
+  priority    Int           @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  status      RoadmapStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  items       RoadmapItem[]
+}
+
+enum ItemType {
+  VIDEO
+  PAPER
+  COURSE
+  PROBLEM
+  PROJECT
+  REVIEW
+  READING
+}
+
+enum ItemStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  DEFERRED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model RoadmapItem {
+  id                 String         @id @default(cuid())
+  roadmapId          String
+  roadmap            Roadmap        @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  type               ItemType       @default(VIDEO)
+  url                String?
+  estimatedMinutes   Int            @default(45)
+  sequenceOrder      Int            @default(0)
+  scheduledDate      DateTime?
+  status             ItemStatus     @default(TODO)
+  difficulty         Difficulty?
+  tags               String[]
+  nextReviewAt       DateTime?
+  reviewIntervalDays Int            @default(1)
+  lastReviewedAt     DateTime?
+  recallScore        Float?
+  struggled          Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  sessions           StudySession[]
+  quizCards          QuizCard[]
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+model StudySession {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmapItemId   String?
+  roadmapItem     RoadmapItem?  @relation(fields: [roadmapItemId], references: [id])
+  startedAt       DateTime      @default(now())
+  endedAt         DateTime?
+  actualMinutes   Int?
+  status          SessionStatus @default(IN_PROGRESS)
+  energyLevel     Int?
+  focusScore      Int?
+  summary         String?
+  confusions      String?
+  keyTakeaways    String?
+  artifactCreated Boolean       @default(false)
+  notes           Note[]
+}
+
+model Note {
+  id           String        @id @default(cuid())
+  sessionId    String?
+  session      StudySession? @relation(fields: [sessionId], references: [id])
+  title        String?
+  bodyMarkdown String        @default("")
+  tags         String[]
+  concepts     String[]
+  sourceUrl    String?
+  confidence   Int?
+  publishable  Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  quizCards    QuizCard[]
+}
+
+enum CardType {
+  FACTUAL
+  CONCEPTUAL
+  COMPARE_CONTRAST
+  INTERVIEW
+}
+
+enum ReviewResult {
+  EASY
+  MEDIUM
+  HARD
+  FAILED
+}
+
+model QuizCard {
+  id            String        @id @default(cuid())
+  noteId        String?
+  note          Note?         @relation(fields: [noteId], references: [id])
+  roadmapItemId String?
+  roadmapItem   RoadmapItem?  @relation(fields: [roadmapItemId], references: [id])
+  question      String
+  answer        String
+  cardType      CardType      @default(FACTUAL)
+  difficulty    Difficulty    @default(MEDIUM)
+  nextReviewAt  DateTime      @default(now())
+  intervalDays  Int           @default(1)
+  easeFactor    Float         @default(2.5)
+  lastResult    ReviewResult?
+  createdAt     DateTime      @default(now())
+}

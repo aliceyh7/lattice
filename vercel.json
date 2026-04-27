@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run db:generate && next build",
+  "crons": [
+    {
+      "path": "/api/cron/review-nudge",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

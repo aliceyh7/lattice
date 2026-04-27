@@ -1,0 +1,398 @@
+import { PrismaClient, Domain, ItemType, Difficulty } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import "dotenv/config"
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const db = new PrismaClient({ adapter })
+
+// The seed user — replace clerkId after you sign in once
+const SEED_USER = {
+  clerkId: "seed_user_placeholder",
+  email: "alice.yh7@gmail.com",
+  name: "Alice",
+}
+
+// --- Schedule data ---
+// Each entry: { date, items[] }
+// date: "YYYY-MM-DD"
+// items: [ { title, domain, type, url, estimatedMinutes, difficulty? } ]
+
+type ScheduleItem = {
+  title: string
+  domain: Domain
+  type: ItemType
+  url?: string
+  estimatedMinutes: number
+  difficulty?: Difficulty
+}
+
+type DayPlan = {
+  date: string
+  items: ScheduleItem[]
+}
+
+const schedule: DayPlan[] = [
+  // ── Week 1: Apr 27 – May 3 ──────────────────────────────────
+  {
+    date: "2026-04-27",
+    items: [
+      { title: "NC Arrays #1 — Contains Duplicate", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/contains-duplicate/", estimatedMinutes: 35, difficulty: "EASY" },
+      { title: "Karpathy ep 1 — intro + Value class (first 45 min)", domain: "ML_RECSYS", type: "VIDEO", url: "https://www.youtube.com/watch?v=VMj-3S1tku0&list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 1 (Vectors) + learncpp ch 0", domain: "MATH_STATS", type: "VIDEO", url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-04-28",
+    items: [
+      { title: "NC Arrays #2 — Valid Anagram", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/valid-anagram/", estimatedMinutes: 30, difficulty: "EASY" },
+      { title: "Karpathy ep 1 — autograd internals (next 45 min)", domain: "ML_RECSYS", type: "VIDEO", url: "https://www.youtube.com/watch?v=VMj-3S1tku0&list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 2 (Span & basis) + learncpp ch 1.1–1.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-04-29",
+    items: [
+      { title: "NC Arrays #3 — Two Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/two-sum/", estimatedMinutes: 30, difficulty: "EASY" },
+      { title: "Karpathy ep 1 — training a tiny neuron (next 45 min)", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 3 (Linear transformations) + learncpp ch 1.5–1.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-04-30",
+    items: [
+      { title: "NC Arrays #4 — Group Anagrams", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/group-anagrams/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "MOOC: enroll Course 1 + Module 1 intro", domain: "ML_RECSYS", type: "COURSE", url: "https://www.coursera.org/specializations/recommender-systems", estimatedMinutes: 60 },
+      { title: "3B1B Linalg ep 4 (Matrix multiplication) + learncpp ch 1.8–1.10", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-01",
+    items: [
+      { title: "NC Arrays #5 — Top K Frequent Elements", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/top-k-frequent-elements/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 1 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 60 },
+      { title: "3B1B Linalg ep 5 (3D linear transformations)", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 30 },
+    ],
+  },
+  {
+    date: "2026-05-02",
+    items: [
+      { title: "NC Arrays #6 — Encode/Decode Strings + review #1–2", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/encode-and-decode-strings/", estimatedMinutes: 60, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 1 finish + recreate micrograd notebook", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 150 },
+      { title: "learncpp ch 1 finish", domain: "CPP_SYSTEMS", type: "READING", url: "https://www.learncpp.com/", estimatedMinutes: 45 },
+    ],
+  },
+  {
+    date: "2026-05-03",
+    items: [
+      { title: "NC Arrays #7 — Product of Array Except Self", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/product-of-array-except-self/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "Write note: 'what backprop actually computes'", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 30 },
+      { title: "3B1B Linalg ep 6 (Determinant) + weekly review", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 45 },
+    ],
+  },
+  // ── Week 2: May 4 – May 10 ──────────────────────────────────
+  {
+    date: "2026-05-04",
+    items: [
+      { title: "NC Arrays #8 — Valid Sudoku", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/valid-sudoku/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 2 (makemore bigrams) — first 45 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 7 (Inverse, column space, null space)", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 35 },
+    ],
+  },
+  {
+    date: "2026-05-05",
+    items: [
+      { title: "NC Arrays #9 — Longest Consecutive Sequence", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/longest-consecutive-sequence/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 2 — next 45 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 8 (Nonsquare matrices) + learncpp ch 2.1–2.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-06",
+    items: [
+      { title: "NC Two Pointers #1 — Valid Palindrome", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/valid-palindrome/", estimatedMinutes: 30, difficulty: "EASY" },
+      { title: "MOOC: Course 1 Module 2 lecture A", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 9 (Dot products) + learncpp ch 2.5–2.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-07",
+    items: [
+      { title: "NC Two Pointers #2 — Two Sum II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/", estimatedMinutes: 35, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 2 lecture B", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 10 (Cross products) + learncpp ch 2.8–2.10", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-08",
+    items: [
+      { title: "NC Two Pointers #3 — 3Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/3sum/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 2 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 11 (Cramer's rule) + learncpp ch 2 finish", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-09",
+    items: [
+      { title: "NC Two Pointers #4 — Container With Most Water + review 3Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/container-with-most-water/", estimatedMinutes: 60, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 2 finish + recreate bigram notebook", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 120 },
+      { title: "Write note: 'counting vs neural net — what changes'", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 20 },
+    ],
+  },
+  {
+    date: "2026-05-10",
+    items: [
+      { title: "NC Two Pointers #5 — Trapping Rain Water", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/trapping-rain-water/", estimatedMinutes: 60, difficulty: "HARD" },
+      { title: "MOOC: Course 1 Module 3 start", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "Weekly review + plan adjustments", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 },
+    ],
+  },
+  // ── Week 3: May 11 – May 17 ──────────────────────────────────
+  {
+    date: "2026-05-11",
+    items: [
+      { title: "NC Sliding Window #1 — Best Time to Buy/Sell Stock", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/", estimatedMinutes: 30, difficulty: "EASY" },
+      { title: "Karpathy ep 3 (makemore MLP) — first 45 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 12 (Change of basis)", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 30 },
+    ],
+  },
+  {
+    date: "2026-05-12",
+    items: [
+      { title: "NC SW #2 — Longest Substring Without Repeating Chars", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/longest-substring-without-repeating-characters/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 3 — next 45 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 13 (Eigenvectors pt 1) + learncpp ch 3.1–3.5", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-13",
+    items: [
+      { title: "NC SW #3 — Longest Repeating Character Replacement", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/longest-repeating-character-replacement/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 3 lecture A", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 14 (Eigenvectors pt 2) + learncpp ch 3.6–3.10", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-14",
+    items: [
+      { title: "NC SW #4 — Permutation in String", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/permutation-in-string/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 3 lecture B", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 15 (Abstract vector spaces) + learncpp ch 4.1–4.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-15",
+    items: [
+      { title: "NC SW #5 — Minimum Window Substring", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-window-substring/", estimatedMinutes: 50, difficulty: "HARD" },
+      { title: "MOOC: Course 1 Module 3 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "3B1B Linalg ep 16 (finale) + learncpp ch 4.5–4.8", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-16",
+    items: [
+      { title: "NC SW #6 — Sliding Window Maximum + review #5", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/sliding-window-maximum/", estimatedMinutes: 60, difficulty: "HARD" },
+      { title: "Karpathy ep 3 finish + redo MLP notebook with different hyperparams", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 120 },
+      { title: "learncpp ch 4 finish", domain: "CPP_SYSTEMS", type: "READING", estimatedMinutes: 40 },
+    ],
+  },
+  {
+    date: "2026-05-17",
+    items: [
+      { title: "Review 2 Hard problems from this week (no new)", domain: "LEETCODE", type: "REVIEW", estimatedMinutes: 60 },
+      { title: "Paper #1 (skim): Koren et al. Matrix Factorization Techniques §2", domain: "ML_RECSYS", type: "PAPER", url: "https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf", estimatedMinutes: 45, difficulty: "MEDIUM" },
+      { title: "Weekly review", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 20 },
+    ],
+  },
+  // ── Week 4: May 18 – May 24 ──────────────────────────────────
+  {
+    date: "2026-05-18",
+    items: [
+      { title: "NC Stack #1 — Valid Parentheses", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/valid-parentheses/", estimatedMinutes: 30, difficulty: "EASY" },
+      { title: "Karpathy ep 4 — first 45 min (BatchNorm)", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "Stat 110 lecture 1 (Probability and Counting)", domain: "MATH_STATS", type: "VIDEO", url: "https://www.youtube.com/playlist?list=PL2SOU6wwxB0uwwH80KTQ6ht66KWxbzTIo", estimatedMinutes: 50 },
+    ],
+  },
+  {
+    date: "2026-05-19",
+    items: [
+      { title: "NC Stack #2 — Min Stack", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/min-stack/", estimatedMinutes: 35, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 4 — next 45 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 },
+      { title: "Stat 110 lecture 2 (Story Proofs) + learncpp ch 5.1–5.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 },
+    ],
+  },
+  {
+    date: "2026-05-20",
+    items: [
+      { title: "NC Stack #3 — Evaluate Reverse Polish Notation", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/evaluate-reverse-polish-notation/", estimatedMinutes: 35, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 4 lecture A", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "Stat 110 lecture 3 (Birthday Problem) + learncpp ch 5.5–5.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 },
+    ],
+  },
+  {
+    date: "2026-05-21",
+    items: [
+      { title: "NC Stack #4 — Generate Parentheses", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/generate-parentheses/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 4 lecture B", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "learncpp ch 5.8–5.10", domain: "CPP_SYSTEMS", type: "READING", estimatedMinutes: 35 },
+    ],
+  },
+  {
+    date: "2026-05-22",
+    items: [
+      { title: "NC Stack #5 — Daily Temperatures", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/daily-temperatures/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+      { title: "MOOC: Course 1 Module 4 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 },
+      { title: "learncpp ch 5 finish", domain: "CPP_SYSTEMS", type: "READING", estimatedMinutes: 35 },
+    ],
+  },
+  {
+    date: "2026-05-23",
+    items: [
+      { title: "NC Stack #6 — Car Fleet + review #4", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/car-fleet/", estimatedMinutes: 60, difficulty: "MEDIUM" },
+      { title: "Karpathy ep 4 finish + turn off BatchNorm experiment", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 120 },
+      { title: "Note: 'why BatchNorm helps, in one paragraph'", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 20 },
+    ],
+  },
+  {
+    date: "2026-05-24",
+    items: [
+      { title: "NC Stack #7 — Largest Rectangle in Histogram", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/largest-rectangle-in-histogram/", estimatedMinutes: 60, difficulty: "HARD" },
+      { title: "MOOC: finish Course 1 (Intro to RecSys) — write 3-bullet summary", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 60 },
+      { title: "Weekly review + Phase 1 retrospective", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 },
+    ],
+  },
+  // ── Weeks 5–14 abbreviated (key milestones) ─────────────────
+  // Week 5
+  { date: "2026-05-25", items: [{ title: "NC Binary Search #1 — Binary Search", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/binary-search/", estimatedMinutes: 30, difficulty: "EASY" }, { title: "Karpathy ep 5 — first 60 min (manual backprop)", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 60 }, { title: "Stat 110 lecture 4 (Conditional Probability)", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-05-26", items: [{ title: "NC BS #2 — Search a 2D Matrix", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/search-a-2d-matrix/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Karpathy ep 5 — next 60 min", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 60 }, { title: "Stat 110 lecture 5 + learncpp ch 6.1–6.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-05-27", items: [{ title: "NC BS #3 — Koko Eating Bananas", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/koko-eating-bananas/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "MOOC: Course 2 Module 1 lecture A", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 }, { title: "Stat 110 lecture 6 + learncpp ch 6.5–6.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-05-28", items: [{ title: "NC BS #4 — Find Min in Rotated Sorted Array", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "MOOC: Course 2 Module 1 lecture B", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 }, { title: "Stat 110 lecture 7 + learncpp ch 6.8–6.10", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-05-29", items: [{ title: "NC BS #5 — Search in Rotated Sorted Array", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/search-in-rotated-sorted-array/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #1 FULL READ: Koren et al. Matrix Factorization Techniques", domain: "ML_RECSYS", type: "PAPER", url: "https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: Course 2 Module 1 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  { date: "2026-05-30", items: [{ title: "NC BS #6 — Time Based Key-Value Store + review #5", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/time-based-key-value-store/", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Karpathy ep 5 finish + redo manual backprop without looking", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 120 }, { title: "learncpp ch 6 finish", domain: "CPP_SYSTEMS", type: "READING", estimatedMinutes: 40 }] },
+  { date: "2026-05-31", items: [{ title: "NC BS #7 — Median of Two Sorted Arrays", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/median-of-two-sorted-arrays/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Re-read Paper #1 + polish note", domain: "ML_RECSYS", type: "PAPER", estimatedMinutes: 45 }, { title: "Weekly review", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 20 }] },
+  // Week 6
+  { date: "2026-06-01", items: [{ title: "NC Linked List #1 — Reverse Linked List", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/reverse-linked-list/", estimatedMinutes: 30, difficulty: "EASY" }, { title: "Karpathy ep 6 — first 45 min (WaveNet)", domain: "ML_RECSYS", type: "VIDEO", estimatedMinutes: 45 }, { title: "Stat 110 lecture 8 (Random Variables)", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-06-05", items: [{ title: "NC LL #5 — Copy List with Random Pointer", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/copy-list-with-random-pointer/", estimatedMinutes: 45, difficulty: "MEDIUM" }, { title: "Paper #2 FULL READ: Rendle BPR — Bayesian Personalized Ranking", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1205.2618", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: Course 2 Module 2 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  // Week 7
+  { date: "2026-06-12", items: [{ title: "NC LL #10 — Merge K Sorted Lists", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/merge-k-sorted-lists/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Paper #3 FULL READ: Cheng et al. Wide & Deep Learning", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1606.07792", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Karpathy ep 7 finish + recreate GPT notebook", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 180 }] },
+  // Week 8
+  { date: "2026-06-16", items: [{ title: "NC Trees #4 — Subtree of Another Tree", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/subtree-of-another-tree/", estimatedMinutes: 35, difficulty: "EASY" }, { title: "Paper #4 FULL READ: Covington et al. Deep Neural Networks for YouTube Recs", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/2959100.2959190", estimatedMinutes: 75, difficulty: "MEDIUM" }, { title: "Stat 110 lecture 17 + learncpp ch 9.1–9.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-06-19", items: [{ title: "NC Trees #7 — Binary Tree Right Side View", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/binary-tree-right-side-view/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Paper #5 FULL READ: Guo et al. DeepFM", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1703.04247", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: Course 3 Module 1 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  // Week 9 — Two-Tower papers (critical)
+  { date: "2026-06-26", items: [{ title: "NC Tries #1 — Implement Trie", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/implement-trie-prefix-tree/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #6 FULL READ: Yi et al. Sampling-Bias-Corrected Two-Tower", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/3298689.3346996", estimatedMinutes: 90, difficulty: "HARD" }, { title: "MOOC: Course 3 Module 2 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  { date: "2026-06-27", items: [{ title: "NC Tries #2 — Design Add and Search Words + review Tree Hards", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/design-add-and-search-words-data-structure/", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Paper #6 RE-READ — write 3-paragraph note: retrieval, sampling bias, batch negatives", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 60 }, { title: "learncpp ch 10 finish", domain: "CPP_SYSTEMS", type: "READING", estimatedMinutes: 40 }] },
+  { date: "2026-06-28", items: [{ title: "NC Tries #3 — Word Search II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/word-search-ii/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Paper #7 FULL READ: Yang et al. Mixed Negative Sampling", domain: "ML_RECSYS", type: "PAPER", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Weekly review", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 20 }] },
+  // Week 10 — MMoE, PLE
+  { date: "2026-07-02", items: [{ title: "NC Heap #3 — K Closest Points to Origin", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/k-closest-points-to-origin/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Paper #8 FULL READ: Ma et al. MMoE", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/3219819.3220007", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: finish Course 3 (Eval & Metrics)", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 45 }] },
+  { date: "2026-07-03", items: [{ title: "NC Heap #4 — Kth Largest Element in Array", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/kth-largest-element-in-an-array/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #9 FULL READ: Tang et al. PLE (RecSys 2020 best paper)", domain: "ML_RECSYS", type: "PAPER", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: Course 4 Module 1 start", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  // Week 11 — Sequence models
+  { date: "2026-07-07", items: [{ title: "NC Backtracking #2 — Combination Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/combination-sum/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #10 FULL READ: Kang & McAuley SASRec", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1808.09781", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Stat 110 lecture 29 + learncpp ch 12.1–12.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-07-08", items: [{ title: "NC Backtracking #3 — Permutations", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/permutations/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #11 FULL READ: Sun et al. BERT4Rec", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1904.06690", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Stat 110 lecture 30 + learncpp ch 12.5–12.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-07-10", items: [{ title: "NC Backtracking #5 — Combination Sum II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/combination-sum-ii/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #12 FULL READ: Naumov et al. DLRM", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1906.00091", estimatedMinutes: 75, difficulty: "HARD" }, { title: "MOOC: Course 4 Module 2 lecture B", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  // Week 12 — Industrial scale, PinSAGE, Netflix
+  { date: "2026-07-14", items: [{ title: "NC Backtracking #9 — N-Queens", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/n-queens/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Paper #13 FULL READ: Liu et al. Monolith", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/2209.07663", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Stat 110 lecture 33 + learncpp ch 13.1–13.4", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-07-15", items: [{ title: "NC Graphs #1 — Number of Islands", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/number-of-islands/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #14 FULL READ: Ying et al. PinSAGE (GNNs in production)", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/3219819.3219890", estimatedMinutes: 75, difficulty: "HARD" }, { title: "Stat 110 lecture 34 (final) + learncpp ch 13.5–13.7", domain: "MATH_STATS", type: "VIDEO", estimatedMinutes: 50 }] },
+  { date: "2026-07-17", items: [{ title: "NC Graphs #3 — Max Area of Island", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/max-area-of-island/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Paper #15 FULL READ: Steck — Calibrated Recommendations (Netflix 2018)", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/3240323.3240372", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "MOOC: Course 4 Module 3 finish", domain: "ML_RECSYS", type: "COURSE", estimatedMinutes: 30 }] },
+  // Week 13 — Netflix deep dive
+  { date: "2026-07-20", items: [{ title: "NC Graphs #6 — Rotting Oranges", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/rotting-oranges/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Paper #16 FULL READ: Steck et al. Deep Learning for RecSys — Netflix Case Study", domain: "ML_RECSYS", type: "PAPER", url: "https://ojs.aaai.org/index.php/aimagazine/article/view/18140", estimatedMinutes: 90, difficulty: "MEDIUM" }, { title: "VMLS ch 4 (Clustering)", domain: "MATH_STATS", type: "READING", estimatedMinutes: 45 }] },
+  { date: "2026-07-21", items: [{ title: "NC Graphs #7 — Walls and Gates", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/walls-and-gates/", estimatedMinutes: 40, difficulty: "MEDIUM" }, { title: "Netflix Tech Blog post #1 — most recent recsys post", domain: "ML_RECSYS", type: "READING", url: "https://netflixtechblog.com/tagged/recommendations", estimatedMinutes: 45 }, { title: "VMLS ch 5 + learncpp ch 14.1–14.4", domain: "MATH_STATS", type: "READING", estimatedMinutes: 45 }] },
+  { date: "2026-07-23", items: [{ title: "NC Graphs #9 — Course Schedule II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/course-schedule-ii/", estimatedMinutes: 45, difficulty: "MEDIUM" }, { title: "Paper #17 FULL READ: Joachims et al. Counterfactual Learning-to-Rank", domain: "ML_RECSYS", type: "PAPER", url: "https://dl.acm.org/doi/10.1145/3077136.3080685", estimatedMinutes: 75, difficulty: "HARD" }, { title: "VMLS ch 7 + learncpp ch 14.8–14.10", domain: "MATH_STATS", type: "READING", estimatedMinutes: 45 }] },
+  { date: "2026-07-25", items: [{ title: "NC Graphs #11 — Number of Connected Components + #12 Graph Valid Tree", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Paper #18 FULL READ: Schnabel et al. Recommendations as Treatments", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/1602.05352", estimatedMinutes: 60, difficulty: "MEDIUM" }, { title: "Netflix Tech Blog post #3", domain: "ML_RECSYS", type: "READING", estimatedMinutes: 30 }] },
+  { date: "2026-07-26", items: [{ title: "NC Graphs #13 — Word Ladder", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/word-ladder/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Netflix Tech Blog post #4", domain: "ML_RECSYS", type: "READING", estimatedMinutes: 30 }, { title: "Write synthesis: 'what to expect doing recsys at scale at Netflix'", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 60 }] },
+  // Week 14 — Frontier papers
+  { date: "2026-07-27", items: [{ title: "NC Advanced Graphs #1 — Reconstruct Itinerary", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/reconstruct-itinerary/", estimatedMinutes: 60, difficulty: "HARD" }, { title: "Paper #19 FULL READ: Tay et al. Transformer Memory as Differentiable Search Index", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/2202.06991", estimatedMinutes: 75, difficulty: "HARD" }, { title: "VMLS ch 8 (Linear equations)", domain: "MATH_STATS", type: "READING", estimatedMinutes: 40 }] },
+  { date: "2026-07-28", items: [{ title: "NC Advanced Graphs #2 — Min Cost to Connect Points", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/min-cost-to-connect-all-points/", estimatedMinutes: 45, difficulty: "MEDIUM" }, { title: "Paper #20 FULL READ: Rajput et al. TIGER: Generative Retrieval with Semantic IDs", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/2305.05065", estimatedMinutes: 75, difficulty: "HARD" }, { title: "VMLS ch 9 (Linear dynamical systems)", domain: "MATH_STATS", type: "READING", estimatedMinutes: 40 }] },
+  { date: "2026-07-30", items: [{ title: "NC Advanced Graphs #4 — Cheapest Flights Within K Stops", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/cheapest-flights-within-k-stops/", estimatedMinutes: 45, difficulty: "MEDIUM" }, { title: "Paper #21 FULL READ: Zhai et al. HSTU / Actions Speak Louder than Words", domain: "ML_RECSYS", type: "PAPER", url: "https://arxiv.org/abs/2402.17152", estimatedMinutes: 90, difficulty: "HARD" }, { title: "VMLS ch 10", domain: "MATH_STATS", type: "READING", estimatedMinutes: 40 }] },
+  { date: "2026-07-31", items: [{ title: "NC 1-D DP #1 — Climbing Stairs", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/climbing-stairs/", estimatedMinutes: 25, difficulty: "EASY" }, { title: "Re-read Paper #21 + write conceptual arc note: CF→DLRM→Two-Tower→MMoE→HSTU", domain: "ML_RECSYS", type: "REVIEW", estimatedMinutes: 60 }, { title: "Netflix Tech Blog post #6", domain: "ML_RECSYS", type: "READING", estimatedMinutes: 30 }] },
+  { date: "2026-08-01", items: [{ title: "NC 1-D DP #2 + #3 — Min Cost Climbing Stairs + House Robber", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/min-cost-climbing-stairs/", estimatedMinutes: 50, difficulty: "EASY" }, { title: "Netflix Tech Blog posts #7 and #8", domain: "ML_RECSYS", type: "READING", estimatedMinutes: 60 }, { title: "Mock interview: explain a recent paper in 5 min out loud", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }] },
+  { date: "2026-08-02", items: [{ title: "NC 1-D DP #4 — House Robber II (light day)", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/house-robber-ii/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Skim paper notes — re-read 3 flagged as 'want to remember'", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 45 }, { title: "Final Phase 4 retrospective + plan roadmaps for Aug 4 onward", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 40 }] },
+]
+
+// Roadmap definitions — one per domain/resource
+const ROADMAPS = [
+  { title: "Karpathy Zero to Hero", domain: "ML_RECSYS" as Domain, description: "Neural Networks: Zero to Hero — build everything from scratch including GPT", targetRole: "ML Engineer" },
+  { title: "NeetCode 150", domain: "LEETCODE" as Domain, description: "NeetCode 150 problems grouped by pattern", targetRole: "SWE" },
+  { title: "3Blue1Brown — Essence of Linear Algebra", domain: "MATH_STATS" as Domain, description: "16-episode intuition-first linear algebra series" },
+  { title: "Stat 110 — Harvard Probability", domain: "MATH_STATS" as Domain, description: "Joe Blitzstein's 34-lecture probability course", targetRole: "Quant / ML" },
+  { title: "RecSys MOOC (UMN)", domain: "ML_RECSYS" as Domain, description: "University of Minnesota Recommender Systems Specialization (5 courses)", targetRole: "Netflix RecSys ML" },
+  { title: "RecSys Foundations — 22 Papers", domain: "ML_RECSYS" as Domain, description: "Industrial RecSys paper sequence from classical CF to frontier generative retrieval", targetRole: "Netflix RecSys ML" },
+  { title: "Netflix Tech Blog Deep Dive", domain: "ML_RECSYS" as Domain, description: "Recent Netflix Tech Blog recsys posts", targetRole: "Netflix RecSys ML" },
+  { title: "learncpp.com", domain: "CPP_SYSTEMS" as Domain, description: "Comprehensive C++17/20 tutorial — read linearly" },
+  { title: "VMLS — Applied Linear Algebra", domain: "MATH_STATS" as Domain, description: "Boyd's Introduction to Applied Linear Algebra (free PDF)" },
+  { title: "Weekly Review", domain: "REVIEW" as Domain, description: "Weekly retrospectives and spaced review sessions" },
+]
+
+async function main() {
+  console.log("Seeding database…")
+
+  // Upsert user
+  const user = await db.user.upsert({
+    where: { email: SEED_USER.email },
+    create: SEED_USER,
+    update: {},
+  })
+  console.log(`User: ${user.name} (${user.id})`)
+
+  // Create roadmaps
+  const roadmapMap: Record<string, string> = {} // title → id
+  for (const rm of ROADMAPS) {
+    const existing = await db.roadmap.findFirst({
+      where: { userId: user.id, title: rm.title },
+    })
+    const roadmap = existing
+      ? existing
+      : await db.roadmap.create({
+          data: { userId: user.id, ...rm, priority: ROADMAPS.indexOf(rm) },
+        })
+    roadmapMap[rm.title] = roadmap.id
+  }
+
+  // Helper — map domain → roadmap
+  function pickRoadmap(domain: Domain, title: string, type: string): string {
+    if (domain === "LEETCODE") return roadmapMap["NeetCode 150"]
+    if (domain === "REVIEW") return roadmapMap["Weekly Review"]
+    if (domain === "CPP_SYSTEMS") return roadmapMap["learncpp.com"]
+    if (title.includes("3B1B") || title.includes("Linalg")) return roadmapMap["3Blue1Brown — Essence of Linear Algebra"]
+    if (title.includes("Stat 110")) return roadmapMap["Stat 110 — Harvard Probability"]
+    if (title.includes("VMLS")) return roadmapMap["VMLS — Applied Linear Algebra"]
+    if (title.includes("MOOC")) return roadmapMap["RecSys MOOC (UMN)"]
+    if (title.includes("Karpathy") || title.includes("micrograd") || title.includes("bigram") || title.includes("MLP") || title.includes("BatchNorm") || title.includes("backprop") || title.includes("GPT")) return roadmapMap["Karpathy Zero to Hero"]
+    if (type === "PAPER" || title.startsWith("Paper #")) return roadmapMap["RecSys Foundations — 22 Papers"]
+    if (title.includes("Netflix Tech Blog")) return roadmapMap["Netflix Tech Blog Deep Dive"]
+    return roadmapMap["RecSys MOOC (UMN)"]
+  }
+
+  // Seed schedule items
+  let totalCreated = 0
+  for (const day of schedule) {
+    const scheduledDate = new Date(day.date + "T09:00:00.000Z")
+    for (let i = 0; i < day.items.length; i++) {
+      const item = day.items[i]
+      const roadmapId = pickRoadmap(item.domain, item.title, item.type)
+      const existing = await db.roadmapItem.findFirst({
+        where: { roadmapId, title: item.title },
+      })
+      if (!existing) {
+        await db.roadmapItem.create({
+          data: {
+            roadmapId,
+            title: item.title,
+            type: item.type,
+            url: item.url,
+            estimatedMinutes: item.estimatedMinutes,
+            difficulty: item.difficulty,
+            scheduledDate,
+            sequenceOrder: i,
+          },
+        })
+        totalCreated++
+      }
+    }
+  }
+
+  console.log(`Created ${totalCreated} schedule items across ${schedule.length} days`)
+  console.log("Done! Seed complete.")
+}
+
+main()
+  .catch(console.error)
+  .finally(() => db.$disconnect())
