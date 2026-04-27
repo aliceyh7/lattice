@@ -10,12 +10,14 @@ export async function completeSession({
   keyTakeaways,
   confusions,
   struggled,
+  publishable,
 }: {
   sessionId: string
   noteMarkdown: string
   keyTakeaways: string
   confusions: string
   struggled: boolean
+  publishable: boolean
 }) {
   const user = await getUser()
   const session = await db.studySession.findFirst({
@@ -34,7 +36,7 @@ export async function completeSession({
     if (existingNoteId) {
       await db.note.update({
         where: { id: existingNoteId },
-        data: { bodyMarkdown: noteMarkdown },
+        data: { bodyMarkdown: noteMarkdown, publishable },
       })
     } else {
       await db.note.create({
@@ -42,6 +44,7 @@ export async function completeSession({
           sessionId,
           bodyMarkdown: noteMarkdown,
           title: session.roadmapItem?.title,
+          publishable,
         },
       })
     }
@@ -77,6 +80,8 @@ export async function completeSession({
 
   revalidatePath("/today")
   revalidatePath("/metrics")
+  revalidatePath("/notes")
+  revalidatePath("/publish")
 }
 
 export async function saveNote({

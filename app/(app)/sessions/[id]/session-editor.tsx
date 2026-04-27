@@ -20,7 +20,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
-import { completeSession, saveNote } from "./actions"
+import { completeSession } from "./actions"
 
 type SessionWithRelations = {
   id: string
@@ -59,6 +59,7 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
   const [isPending, startTransition] = useTransition()
   const [keyTakeaways, setKeyTakeaways] = useState("")
   const [confusions, setConfusions] = useState("")
+  const [publishable, setPublishable] = useState(true)
   const timer = useTimer(session.startedAt)
   const isDone = session.status === "COMPLETED"
 
@@ -96,6 +97,7 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
         keyTakeaways,
         confusions,
         struggled,
+        publishable,
       })
       toast.success(
         struggled
@@ -211,6 +213,15 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
             {item}
           </label>
         ))}
+        <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">
+          <input
+            type="checkbox"
+            className="rounded"
+            checked={publishable}
+            onChange={(e) => setPublishable(e.target.checked)}
+          />
+          Add this note to the publish queue
+        </label>
       </div>
 
       {/* Action buttons */}
