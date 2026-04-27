@@ -370,14 +370,99 @@ const ADVANCED_LEETCODE_BY_DATE: Record<string, ScheduleItem> = {
   "2026-08-02": { title: "Python Review — timed mixed set: one graph, one DP, one design", domain: "LEETCODE", type: "REVIEW", estimatedMinutes: 75 },
 }
 
-const schedule: DayPlan[] = baseSchedule.map((day) => ({
-  ...day,
-  items: day.items
+const LEARNCPP_MAINTENANCE_TITLES = new Set([
+  "learncpp ch 0",
+  "learncpp ch 1 finish",
+  "learncpp ch 4 finish",
+  "learncpp ch 5 finish",
+  "learncpp ch 6 finish",
+  "learncpp ch 10 finish",
+  "learncpp ch 14 light review",
+])
+
+const RECSYS_PROJECT_BY_DATE: Record<string, ScheduleItem[]> = {
+  "2026-04-29": [{ title: "Project: set up RecSys notebooks repo", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-01": [{ title: "Project: matrix factorization skeleton", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-05": [{ title: "Project: matrix factorization forward pass", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-07": [{ title: "Project: train MF on toy user-item data", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-05-09": [{ title: "Project: MF loss curves and notes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-12": [{ title: "Project: BPR loss implementation", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-05-14": [{ title: "Project: negative sampling experiment", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-16": [{ title: "Project: compare MF vs BPR notes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-19": [{ title: "Project: offline eval metrics skeleton", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-21": [{ title: "Project: recall@K and precision@K", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-22": [{ title: "Project: NDCG and MAP", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-26": [{ title: "Project: two-tower dataset prep", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-05-28": [{ title: "Project: two-tower model skeleton", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-05-30": [{ title: "Project: train two-tower toy model", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 90 }],
+  "2026-06-02": [{ title: "Project: two-tower retrieval eval", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-04": [{ title: "Project: batch negatives experiment", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-06": [{ title: "Project: retrieval notebook README", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-06-09": [{ title: "Project: simple ranking feature table", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-11": [{ title: "Project: train ranking baseline", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-06-16": [{ title: "Project: retrieval/ranking system diagram", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-06-17": [{ title: "Project: ranking eval metrics", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-20": [{ title: "Project: feature crossing and embeddings toy example", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-23": [{ title: "Project: sampling bias notebook", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-25": [{ title: "Project: batch negatives vs sampled negatives", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-06-29": [{ title: "Project: refactor RecSys notebooks", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-07-01": [{ title: "Project: ranking model improvements", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-07-04": [{ title: "Project: multitask toy sketch", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-09": [{ title: "Project: simple sequential recommender setup", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+  "2026-07-11": [{ title: "Project: embeddings plus dense features toy model", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-16": [{ title: "Project: graph recommendation sketch", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-18": [{ title: "Project: calibration toy example", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-22": [{ title: "Project: end-to-end RecSys diagram", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-24": [{ title: "Project: counterfactual eval notes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-07-29": [{ title: "Project: final RecSys portfolio notebook cleanup", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
+}
+
+const SYNTHESIS_REVIEW_BY_DATE: Record<string, ScheduleItem[]> = {
+  "2026-05-03": [{ title: "Publish/Synthesis: what backprop computes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-10": [{ title: "Review: explain matrix factorization in 60 seconds", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-05-17": [{ title: "Publish/Synthesis: MF vs BPR comparison draft", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-24": [{ title: "Publish/Synthesis: how to evaluate recommenders", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-31": [{ title: "Review: explain retrieval vs ranking", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-06-07": [{ title: "Publish/Synthesis: two-tower learning note", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-06-14": [{ title: "Review: candidate generation and ranking split", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-06-21": [{ title: "Publish/Synthesis: retrieval/ranking explainer", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-06-28": [{ title: "Review: two-tower and Word Search synthesis", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-07-05": [{ title: "Publish/Synthesis: multitask learning summary", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-07-12": [{ title: "Review: explain DLRM in 60 seconds", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-07-19": [{ title: "Review: Netflix-style system design outline", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 45 }],
+  "2026-07-26": [{ title: "Review: what RecSys at Netflix likely involves", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 45 }],
+  "2026-08-02": [{ title: "Review: final retrospective and next roadmap planning", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 45 }],
+}
+
+const baseScheduleByDate = new Map(baseSchedule.map((day) => [day.date, day]))
+
+const scheduleDates = Array.from(
+  new Set([
+    ...baseSchedule.map((day) => day.date),
+    ...Object.keys(RECSYS_PROJECT_BY_DATE),
+    ...Object.keys(SYNTHESIS_REVIEW_BY_DATE),
+  ])
+).sort()
+
+const schedule: DayPlan[] = scheduleDates.map((date) => {
+  const baseDay = baseScheduleByDate.get(date)
+  const items = (baseDay?.items ?? [])
     .map((item) =>
-      item.domain === "LEETCODE" ? ADVANCED_LEETCODE_BY_DATE[day.date] ?? item : item
+      item.domain === "LEETCODE" ? ADVANCED_LEETCODE_BY_DATE[date] ?? item : item
     )
-    .flatMap(splitCombinedLearnCppItem),
-}))
+    .flatMap(splitCombinedLearnCppItem)
+    .map((item) => normalizeLearnCppMaintenance(date, item))
+    .filter(keepLearnCppMaintenance)
+
+  return {
+    date,
+    items: [
+      ...items,
+      ...(RECSYS_PROJECT_BY_DATE[date] ?? []),
+      ...(SYNTHESIS_REVIEW_BY_DATE[date] ?? []),
+    ],
+  }
+})
 
 const splitLearnCppTitles = baseSchedule
   .flatMap((day) => day.items)
@@ -391,6 +476,7 @@ const ROADMAPS = [
   { title: "3Blue1Brown — Essence of Linear Algebra", domain: "MATH_STATS" as Domain, description: "16-episode intuition-first linear algebra series" },
   { title: "Stat 110 — Harvard Probability", domain: "MATH_STATS" as Domain, description: "Joe Blitzstein's 34-lecture probability course", targetRole: "Quant / ML" },
   { title: "RecSys MOOC (UMN)", domain: "ML_RECSYS" as Domain, description: "University of Minnesota Recommender Systems Specialization (5 courses)", targetRole: "Netflix RecSys ML" },
+  { title: "RecSys Mini-Implementations", domain: "ML_RECSYS" as Domain, description: "Hands-on notebooks for matrix factorization, BPR, two-tower retrieval, ranking, and offline evaluation", targetRole: "Netflix RecSys ML" },
   { title: "RecSys Foundations — 22 Papers", domain: "ML_RECSYS" as Domain, description: "Industrial RecSys paper sequence from classical CF to frontier generative retrieval", targetRole: "Netflix RecSys ML" },
   { title: "Netflix Tech Blog Deep Dive", domain: "ML_RECSYS" as Domain, description: "Recent Netflix Tech Blog recsys posts", targetRole: "Netflix RecSys ML" },
   { title: "learncpp.com", domain: "CPP_SYSTEMS" as Domain, description: "Comprehensive C++17/20 tutorial — read linearly" },
@@ -448,11 +534,38 @@ async function main() {
     },
   })
 
+  const activeLearnCppTitles = schedule
+    .flatMap((day) => day.items)
+    .filter(isLearnCppItem)
+    .map((item) => item.title)
+
+  await db.roadmapItem.deleteMany({
+    where: {
+      roadmapId: roadmapMap["learncpp.com"],
+      title: { notIn: activeLearnCppTitles },
+      sessions: { none: {} },
+    },
+  })
+
+  const activeRecSysProjectTitles = schedule
+    .flatMap((day) => day.items)
+    .filter((item) => item.title.startsWith("Project:") || item.title.startsWith("Publish/Synthesis:"))
+    .map((item) => item.title)
+
+  await db.roadmapItem.deleteMany({
+    where: {
+      roadmapId: roadmapMap["RecSys Mini-Implementations"],
+      title: { notIn: activeRecSysProjectTitles },
+      sessions: { none: {} },
+    },
+  })
+
   // Helper — map domain → roadmap
   function pickRoadmap(domain: Domain, title: string, type: string): string {
     if (domain === "LEETCODE") return roadmapMap["Advanced Python LeetCode"]
     if (domain === "REVIEW") return roadmapMap["Weekly Review"]
     if (domain === "CPP_SYSTEMS") return roadmapMap["learncpp.com"]
+    if (title.startsWith("Project:") || title.startsWith("Publish/Synthesis:")) return roadmapMap["RecSys Mini-Implementations"]
     if (title.includes("3B1B") || title.includes("Linalg")) return roadmapMap["3Blue1Brown — Essence of Linear Algebra"]
     if (title.includes("Stat 110")) return roadmapMap["Stat 110 — Harvard Probability"]
     if (title.includes("VMLS")) return roadmapMap["VMLS — Applied Linear Algebra"]
@@ -521,6 +634,26 @@ function splitCombinedLearnCppItem(item: ScheduleItem): ScheduleItem[] {
       estimatedMinutes: cppMinutes,
     },
   ]
+}
+
+function normalizeLearnCppMaintenance(date: string, item: ScheduleItem): ScheduleItem {
+  if (date === "2026-07-21" && isLearnCppItem(item) && item.title.includes("ch 14")) {
+    return {
+      ...item,
+      title: "learncpp ch 14 light review",
+      estimatedMinutes: 30,
+    }
+  }
+
+  return item
+}
+
+function keepLearnCppMaintenance(item: ScheduleItem): boolean {
+  return !isLearnCppItem(item) || LEARNCPP_MAINTENANCE_TITLES.has(item.title)
+}
+
+function isLearnCppItem(item: ScheduleItem): boolean {
+  return item.domain === "CPP_SYSTEMS" && item.title.startsWith("learncpp ")
 }
 
 main()

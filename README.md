@@ -91,6 +91,8 @@ Seed data is in `prisma/seed.ts`. Running `npm run db:seed` upserts the default 
 
 The seed also splits combined schedule rows such as `Stat 110 lecture 29 + learncpp ch 12.1-12.4` into separate roadmap items so C++ reading stays under `learncpp.com`.
 
+For the Netflix RecSys ramp, the seed intentionally reduces C++ to light maintenance and adds a `RecSys Mini-Implementations` roadmap with project blocks for matrix factorization, BPR, two-tower retrieval, ranking, offline evaluation, diagrams, and publishable synthesis notes.
+
 ## Publish Drafts
 
 The publish flow is:

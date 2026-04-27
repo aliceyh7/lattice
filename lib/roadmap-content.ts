@@ -88,6 +88,18 @@ export function getRoadmapNarrative(roadmap: RoadmapLike): RoadmapNarrative {
     }
   }
 
+  if (roadmap.title.includes("RecSys Mini-Implementations")) {
+    return {
+      summary:
+        "Build a practical RecSys portfolio through small notebooks: matrix factorization, BPR loss, two-tower retrieval, ranking, offline evaluation, and system-design synthesis.",
+      outcomes: [
+        "Implement the core retrieval and ranking ideas behind industrial recommenders.",
+        "Explain evaluation metrics, sampling choices, and model tradeoffs from working code.",
+        "Produce notebook artifacts that can become interview explanations and public posts.",
+      ],
+    }
+  }
+
   if (roadmap.title.includes("RecSys Foundations")) {
     return {
       summary:
@@ -242,6 +254,18 @@ function getUnitDefinitions(roadmap: RoadmapLike) {
       unit("Course 2", "Collaborative filtering and user-item modeling.", ["Course 2"]),
       unit("Course 3", "Evaluation, metrics, and practical recommendation tradeoffs.", ["Course 3"]),
       unit("Course 4", "Advanced models and applied recommender system design.", ["Course 4"]),
+    ]
+  }
+
+  if (roadmap.title.includes("RecSys Mini-Implementations")) {
+    return [
+      unit("Setup and foundations", "Create the notebook workspace and first toy user-item data structures.", ["set up", "notebooks repo"]),
+      unit("Matrix factorization", "Implement MF forward passes, training, losses, and interpretation notes.", ["matrix factorization", "MF "]),
+      unit("Pairwise ranking", "Implement BPR and negative sampling experiments.", ["BPR", "negative sampling"]),
+      unit("Offline evaluation", "Compute ranking metrics used to compare recommender quality.", ["offline eval", "recall@K", "precision@K", "NDCG", "MAP", "eval metrics"]),
+      unit("Retrieval and two-tower", "Build and evaluate a toy two-tower candidate generation model.", ["two-tower", "retrieval", "batch negatives"]),
+      unit("Ranking and features", "Train a simple ranking model with feature tables, crossings, and embeddings.", ["ranking", "feature", "embeddings", "dense features"]),
+      unit("Industrial synthesis", "Turn project work into diagrams, portfolio cleanup, and publishable explanations.", ["system diagram", "counterfactual", "portfolio", "Publish/Synthesis", "end-to-end", "calibration", "multitask", "sequential", "graph"]),
     ]
   }
 

@@ -15,6 +15,7 @@ The current product focus is:
 - Daily execution from `/today`
 - Session notes with a visible timer and embedded resource previews
 - Advanced Python-focused LeetCode practice
+- RecSys mini-implementation projects for matrix factorization, BPR, two-tower retrieval, ranking, and offline evaluation
 - Paper and roadmap tracking
 - Clickable roadmap detail pages with accomplishment summaries and unit breakdowns
 - LLM-assisted publishing drafts for X threads and Medium-style posts
@@ -103,11 +104,13 @@ Seed data lives in `prisma/seed.ts`.
 4. Renames/replaces it with `Advanced Python LeetCode`.
 5. Deletes stale LeetCode items not in the current advanced plan.
 6. Splits combined math/C++ rows like `Stat 110 lecture 29 + learncpp ch 12.1-12.4` into separate roadmap items.
-7. Creates or updates scheduled roadmap items.
+7. Keeps only light learncpp maintenance during the 14-week Netflix ramp and removes stale unstarted C++ rows.
+8. Adds hands-on RecSys mini-implementation and synthesis blocks throughout the schedule.
+9. Creates or updates scheduled roadmap items.
 
 The current LeetCode plan is a shuffled medium-hard Python set, not NeetCode 150. It is designed for someone who has already solved many problems and wants to rebuild speed in Python.
 
-Each `RoadmapItem` should belong to one conceptual roadmap. Do not combine learncpp chapters into math roadmap rows; keep C++ reading under `learncpp.com`.
+Each `RoadmapItem` should belong to one conceptual roadmap. Do not combine learncpp chapters into math roadmap rows; keep C++ reading under `learncpp.com`. Keep C++ light until the Netflix ramp ends around August 3; RecSys, ML projects, LeetCode, reviews, and publishable artifacts should dominate.
 
 ## Main Routes
 
