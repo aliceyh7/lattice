@@ -12,7 +12,6 @@ import {
   BarChart3,
   Send,
   Settings,
-  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -53,17 +52,6 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="border-t pt-3 mt-3">
-        <form action="/api/logout" method="POST">
-          <button
-            type="submit"
-            className="flex items-center gap-2.5 w-full rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            Sign out
-          </button>
-        </form>
-      </div>
     </aside>
   )
 }
