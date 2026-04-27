@@ -9,6 +9,7 @@ Personal curriculum dashboard for structured daily learning, notes, review, Leet
 - Saves notes, key takeaways, and confusions.
 - Embeds YouTube resources directly in session pages.
 - Tracks roadmap progress across ML/RecSys, math, systems, papers, and LeetCode.
+- Opens each roadmap into a summary page with expected outcomes and unit breakdowns.
 - Provides an advanced Python LeetCode plan for medium-hard practice.
 - Generates copyable X thread or Medium-style drafts from notes using an LLM.
 
@@ -68,7 +69,8 @@ npm run build
 - `/sessions/[id]` - study timer, notes editor, resource embed, completion flow
 - `/leetcode` - advanced Python LeetCode roadmap
 - `/papers` - paper and ML reading queue
-- `/roadmaps` - roadmap progress
+- `/roadmaps` - roadmap progress cards
+- `/roadmaps/[id]` - roadmap detail with accomplishment summary and units
 - `/notes` - saved session notes
 - `/publish` - generate X or Medium drafts from notes
 

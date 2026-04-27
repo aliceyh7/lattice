@@ -16,6 +16,7 @@ The current product focus is:
 - Session notes with a visible timer and embedded resource previews
 - Advanced Python-focused LeetCode practice
 - Paper and roadmap tracking
+- Clickable roadmap detail pages with accomplishment summaries and unit breakdowns
 - LLM-assisted publishing drafts for X threads and Medium-style posts
 
 ## Stack
@@ -112,6 +113,7 @@ The current LeetCode plan is a shuffled medium-hard Python set, not NeetCode 150
 - `/leetcode` - advanced Python LeetCode plan grouped by topic
 - `/papers` - paper and ML reading queue
 - `/roadmaps` - active roadmap progress
+- `/roadmaps/[id]` - roadmap summary, outcomes, progress, and unit breakdown
 - `/notes` - recent saved notes
 - `/publish` - choose a note, generate X thread or Medium draft, edit/copy output
 - `/api/publish-draft` - server-only OpenAI Responses API route
@@ -193,4 +195,5 @@ Pushing to `main` may also trigger Vercel Git integration if enabled.
 - Replaced LeetCode roadmap with `Advanced Python LeetCode`.
 - Added publish draft generation for X threads and Medium posts.
 - Added `/api/publish-draft` server route using OpenAI Responses API.
+- Added clickable roadmap detail pages with unit breakdowns.
 - Linked and deployed the app to Vercel production.

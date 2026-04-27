@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { DOMAIN_META } from "@/lib/domain"
+import { getRoadmapNarrative } from "@/lib/roadmap-content"
 import type { Domain } from "@prisma/client"
+import Link from "next/link"
 
 export default async function RoadmapsPage() {
   const user = await getUser()
@@ -31,38 +33,39 @@ export default async function RoadmapsPage() {
       <div className="grid gap-3">
         {roadmaps.map((rm) => {
           const meta = DOMAIN_META[rm.domain as Domain]
+          const narrative = getRoadmapNarrative(rm)
           const pct =
             rm._count.items > 0
               ? Math.round((rm.items.length / rm._count.items) * 100)
               : 0
           return (
-            <Card key={rm.id}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge className={`${meta.bg} ${meta.color} border-0 text-xs`}>
-                      {meta.label}
-                    </Badge>
-                    {rm.targetRole && (
-                      <span className="text-xs text-muted-foreground">{rm.targetRole}</span>
-                    )}
-                  </div>
-                  <p className="font-medium text-sm truncate">{rm.title}</p>
-                  {rm.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                      {rm.description}
+            <Link key={rm.id} href={`/roadmaps/${rm.id}`} className="block group">
+              <Card className="transition-colors group-hover:border-foreground/30">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={`${meta.bg} ${meta.color} border-0 text-xs`}>
+                        {meta.label}
+                      </Badge>
+                      {rm.targetRole && (
+                        <span className="text-xs text-muted-foreground">{rm.targetRole}</span>
+                      )}
+                    </div>
+                    <p className="font-medium text-sm truncate">{rm.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {narrative.summary}
                     </p>
-                  )}
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-medium">{pct}%</p>
-                  <p className="text-xs text-muted-foreground">
-                    {rm.items.length}/{rm._count.items}
-                  </p>
-                  <Progress value={pct} className="mt-2 h-1.5 w-20" />
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-medium">{pct}%</p>
+                    <p className="text-xs text-muted-foreground">
+                      {rm.items.length}/{rm._count.items}
+                    </p>
+                    <Progress value={pct} className="mt-2 h-1.5 w-20" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           )
         })}
       </div>
