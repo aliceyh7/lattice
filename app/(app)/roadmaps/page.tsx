@@ -1,16 +1,12 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import { getUser } from "@/lib/user"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DOMAIN_META } from "@/lib/domain"
 import type { Domain } from "@prisma/client"
 
 export default async function RoadmapsPage() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect("/sign-in")
-  const user = await db.user.findUnique({ where: { clerkId } })
-  if (!user) redirect("/onboard")
+  const user = await getUser()
 
   const roadmaps = await db.roadmap.findMany({
     where: { userId: user.id, status: "ACTIVE" },

@@ -1,15 +1,11 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { startOfWeek, endOfWeek, subDays, format } from "date-fns"
+import { getUser } from "@/lib/user"
+import { startOfWeek, format } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Clock, RotateCcw, TrendingUp } from "lucide-react"
 
 export default async function MetricsPage() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect("/sign-in")
-  const user = await db.user.findUnique({ where: { clerkId } })
-  if (!user) redirect("/onboard")
+  const user = await getUser()
 
   const now = new Date()
   const weekStart = startOfWeek(now, { weekStartsOn: 1 })

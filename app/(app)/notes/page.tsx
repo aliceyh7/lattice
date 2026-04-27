@@ -1,16 +1,12 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import { getUser } from "@/lib/user"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { FileText } from "lucide-react"
 
 export default async function NotesPage() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect("/sign-in")
-  const user = await db.user.findUnique({ where: { clerkId } })
-  if (!user) redirect("/onboard")
+  const user = await getUser()
 
   const notes = await db.note.findMany({
     where: {

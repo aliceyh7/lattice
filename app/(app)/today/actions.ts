@@ -1,17 +1,9 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { db } from "@/lib/db"
+import { getUser } from "@/lib/user"
 import { addDays } from "date-fns"
 import { revalidatePath } from "next/cache"
-
-async function getUser() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) throw new Error("Unauthorized")
-  const user = await db.user.findUnique({ where: { clerkId } })
-  if (!user) throw new Error("User not found")
-  return user
-}
 
 export async function updateItemStatus(
   itemId: string,

@@ -5,9 +5,7 @@ import "dotenv/config"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const db = new PrismaClient({ adapter })
 
-// The seed user — replace clerkId after you sign in once
 const SEED_USER = {
-  clerkId: "seed_user_placeholder",
   email: "alice.yh7@gmail.com",
   name: "Alice",
 }

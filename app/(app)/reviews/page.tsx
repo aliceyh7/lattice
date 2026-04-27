@@ -1,6 +1,5 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import { getUser } from "@/lib/user"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { DOMAIN_META } from "@/lib/domain"
@@ -8,10 +7,7 @@ import type { Domain } from "@prisma/client"
 import { Brain, RotateCcw } from "lucide-react"
 
 export default async function ReviewsPage() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect("/sign-in")
-  const user = await db.user.findUnique({ where: { clerkId } })
-  if (!user) redirect("/onboard")
+  const user = await getUser()
 
   const now = new Date()
 

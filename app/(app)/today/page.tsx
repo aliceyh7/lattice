@@ -1,17 +1,12 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import { getUser } from "@/lib/user"
 import type { Domain } from "@prisma/client"
 import { format, startOfDay, endOfDay } from "date-fns"
 import { TodayClient } from "./today-client"
 
-async function getUser(clerkId: string) {
-  return db.user.findUnique({ where: { clerkId } })
-}
-
 async function getTodayItems(userId: string) {
   const now = new Date()
-  const items = await db.roadmapItem.findMany({
+  return db.roadmapItem.findMany({
     where: {
       roadmap: { userId },
       scheduledDate: {
@@ -32,7 +27,6 @@ async function getTodayItems(userId: string) {
     },
     orderBy: [{ roadmap: { domain: "asc" } }, { sequenceOrder: "asc" }],
   })
-  return items
 }
 
 async function getDueReviewItems(userId: string) {
@@ -68,11 +62,7 @@ async function getStreakAndStats(userId: string) {
 }
 
 export default async function TodayPage() {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) redirect("/sign-in")
-
-  const user = await getUser(clerkId)
-  if (!user) redirect("/onboard")
+  const user = await getUser()
 
   const [items, dueReviews, stats] = await Promise.all([
     getTodayItems(user.id),
@@ -80,7 +70,6 @@ export default async function TodayPage() {
     getStreakAndStats(user.id),
   ])
 
-  // Group by domain
   const grouped: Partial<Record<Domain, typeof items>> = {}
   for (const item of items) {
     const domain = item.roadmap.domain
