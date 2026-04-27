@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ResourceBadge } from "@/components/resource-preview"
+import { buttonVariants } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Clock,
   Play,
@@ -18,6 +20,9 @@ import {
   Circle,
   ExternalLink,
   Brain,
+  ChevronLeft,
+  ChevronRight,
+  Undo2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -44,6 +49,10 @@ type Props = {
   dueReviews: number
   stats: { completedToday: number; totalToday: number }
   dateLabel: string
+  previousDateHref: string
+  nextDateHref: string
+  todayHref: string
+  isToday: boolean
 }
 
 const DOMAIN_ORDER: Domain[] = [
@@ -65,11 +74,11 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
   const isDone = item.status === "COMPLETED"
   const isSkipped = item.status === "SKIPPED"
 
-  function handleAction(action: "COMPLETED" | "SKIPPED" | "DEFERRED") {
+  function handleAction(action: "TODO" | "SKIPPED" | "DEFERRED") {
     startTransition(async () => {
       await updateItemStatus(item.id, action)
       router.refresh()
-      if (action === "COMPLETED") toast.success("Marked complete ✓")
+      if (action === "TODO") toast("Reset to todo.")
       if (action === "SKIPPED") toast("Skipped — no guilt.")
       if (action === "DEFERRED") toast("Moved to tomorrow.")
     })
@@ -133,7 +142,21 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
               </div>
             </div>
           </div>
-          {!isDone && !isSkipped && (
+          {isDone || isSkipped ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs"
+                title="Reset to todo"
+                disabled={isPending}
+                onClick={() => handleAction("TODO")}
+              >
+                <Undo2 className="h-3 w-3" />
+                Reset
+              </Button>
+            </div>
+          ) : (
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 size="sm"
@@ -178,6 +201,10 @@ export function TodayClient({
   dueReviews,
   stats,
   dateLabel,
+  previousDateHref,
+  nextDateHref,
+  todayHref,
+  isToday,
 }: Props) {
   const progress =
     stats.totalToday > 0
@@ -190,8 +217,45 @@ export function TodayClient({
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
       {/* Header */}
       <div>
-        <p className="text-sm text-muted-foreground">{dateLabel}</p>
-        <h1 className="text-2xl font-semibold mt-0.5">Today</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{dateLabel}</p>
+            <h1 className="text-2xl font-semibold mt-0.5">
+              {isToday ? "Today" : "Learning plan"}
+            </h1>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={previousDateHref}
+              className={buttonVariants({
+                variant: "outline",
+                size: "icon-sm",
+              })}
+              title="Previous day"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Link>
+            <Link
+              href={todayHref}
+              className={buttonVariants({
+                variant: isToday ? "secondary" : "outline",
+                size: "sm",
+              })}
+            >
+              Today
+            </Link>
+            <Link
+              href={nextDateHref}
+              className={buttonVariants({
+                variant: "outline",
+                size: "icon-sm",
+              })}
+              title="Next day"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Stats bar */}

@@ -1,17 +1,40 @@
 import { db } from "@/lib/db"
 import { getUser } from "@/lib/user"
 import type { Domain } from "@prisma/client"
-import { format, startOfDay, endOfDay } from "date-fns"
+import {
+  addDays,
+  endOfDay,
+  format,
+  isSameDay,
+  isValid,
+  parseISO,
+  startOfDay,
+  subDays,
+} from "date-fns"
 import { TodayClient } from "./today-client"
 
-async function getTodayItems(userId: string) {
+function parseSelectedDate(dateParam: string | string[] | undefined) {
+  const value = Array.isArray(dateParam) ? dateParam[0] : dateParam
+  if (!value) return new Date()
+
+  const parsed = parseISO(value)
+  return isValid(parsed) ? parsed : new Date()
+}
+
+function dateHref(date: Date) {
+  const today = new Date()
+  if (isSameDay(date, today)) return "/today"
+  return `/today?date=${format(date, "yyyy-MM-dd")}`
+}
+
+async function getItemsForDate(userId: string, selectedDate: Date) {
   const now = new Date()
   return db.roadmapItem.findMany({
     where: {
       roadmap: { userId, status: "ACTIVE" },
       scheduledDate: {
-        gte: startOfDay(now),
-        lte: endOfDay(now),
+        gte: startOfDay(selectedDate),
+        lte: endOfDay(selectedDate),
       },
     },
     include: {
@@ -40,34 +63,18 @@ async function getDueReviewItems(userId: string) {
   })
 }
 
-async function getStreakAndStats(userId: string) {
-  const today = startOfDay(new Date())
-  const completedToday = await db.studySession.count({
-    where: {
-      userId,
-      status: "COMPLETED",
-      startedAt: { gte: today },
-    },
-  })
-  const totalToday = await db.roadmapItem.count({
-    where: {
-      roadmap: { userId, status: "ACTIVE" },
-      scheduledDate: {
-        gte: startOfDay(new Date()),
-        lte: endOfDay(new Date()),
-      },
-    },
-  })
-  return { completedToday, totalToday }
+type TodayPageProps = {
+  searchParams?: Promise<{ date?: string | string[] }>
 }
 
-export default async function TodayPage() {
+export default async function TodayPage({ searchParams }: TodayPageProps) {
   const user = await getUser()
+  const params = await searchParams
+  const selectedDate = parseSelectedDate(params?.date)
 
-  const [items, dueReviews, stats] = await Promise.all([
-    getTodayItems(user.id),
+  const [items, dueReviews] = await Promise.all([
+    getItemsForDate(user.id, selectedDate),
     getDueReviewItems(user.id),
-    getStreakAndStats(user.id),
   ])
 
   const grouped: Partial<Record<Domain, typeof items>> = {}
@@ -81,13 +88,22 @@ export default async function TodayPage() {
     .filter((i) => i.status !== "COMPLETED" && i.status !== "SKIPPED")
     .reduce((acc: number, i) => acc + i.estimatedMinutes, 0)
 
+  const stats = {
+    completedToday: items.filter((i) => i.status === "COMPLETED").length,
+    totalToday: items.length,
+  }
+
   return (
     <TodayClient
       grouped={grouped}
       totalMinutes={totalMinutes}
       dueReviews={dueReviews}
       stats={stats}
-      dateLabel={format(new Date(), "EEEE, MMMM d")}
+      dateLabel={format(selectedDate, "EEEE, MMMM d")}
+      previousDateHref={dateHref(subDays(selectedDate, 1))}
+      nextDateHref={dateHref(addDays(selectedDate, 1))}
+      todayHref="/today"
+      isToday={isSameDay(selectedDate, new Date())}
     />
   )
 }

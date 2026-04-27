@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 
 export async function updateItemStatus(
   itemId: string,
-  status: "COMPLETED" | "SKIPPED" | "DEFERRED"
+  status: "TODO" | "SKIPPED" | "DEFERRED"
 ) {
   const user = await getUser()
 
@@ -15,6 +15,10 @@ export async function updateItemStatus(
     where: { id: itemId, roadmap: { userId: user.id } },
   })
   if (!item) throw new Error("Item not found")
+
+  if (!["TODO", "SKIPPED", "DEFERRED"].includes(status)) {
+    throw new Error("Unsupported Today status update")
+  }
 
   if (status === "DEFERRED") {
     await db.roadmapItem.update({
