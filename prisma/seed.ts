@@ -29,7 +29,7 @@ type DayPlan = {
   items: ScheduleItem[]
 }
 
-const schedule: DayPlan[] = [
+const baseSchedule: DayPlan[] = [
   // ── Week 1: Apr 27 – May 3 ──────────────────────────────────
   {
     date: "2026-04-27",
@@ -305,10 +305,82 @@ const schedule: DayPlan[] = [
   { date: "2026-08-02", items: [{ title: "NC 1-D DP #4 — House Robber II (light day)", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/house-robber-ii/", estimatedMinutes: 35, difficulty: "MEDIUM" }, { title: "Skim paper notes — re-read 3 flagged as 'want to remember'", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 45 }, { title: "Final Phase 4 retrospective + plan roadmaps for Aug 4 onward", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 40 }] },
 ]
 
+const ADVANCED_LEETCODE_BY_DATE: Record<string, ScheduleItem> = {
+  "2026-04-27": { title: "Python Drill — Subarray Sum Equals K", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/subarray-sum-equals-k/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-04-28": { title: "Python Drill — Binary Tree Maximum Path Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/binary-tree-maximum-path-sum/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-04-29": { title: "Python Drill — Accounts Merge", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/accounts-merge/", estimatedMinutes: 55, difficulty: "MEDIUM" },
+  "2026-04-30": { title: "Python Drill — Longest Increasing Subsequence", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/longest-increasing-subsequence/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-01": { title: "Python Drill — Design Add and Search Words", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/design-add-and-search-words-data-structure/", estimatedMinutes: 55, difficulty: "MEDIUM" },
+  "2026-05-02": { title: "Python Drill — Word Ladder", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/word-ladder/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-05-03": { title: "Python Drill — Task Scheduler", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/task-scheduler/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-04": { title: "Python Drill — Find Median from Data Stream", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/find-median-from-data-stream/", estimatedMinutes: 60, difficulty: "HARD" },
+  "2026-05-05": { title: "Python Drill — Course Schedule II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/course-schedule-ii/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-06": { title: "Python Drill — Decode Ways", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/decode-ways/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-07": { title: "Python Drill — Minimum Window Substring", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-window-substring/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-08": { title: "Python Drill — LRU Cache", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/lru-cache/", estimatedMinutes: 60, difficulty: "MEDIUM" },
+  "2026-05-09": { title: "Python Drill — Alien Dictionary", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/alien-dictionary/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-10": { title: "Python Drill — Trapping Rain Water", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/trapping-rain-water/", estimatedMinutes: 60, difficulty: "HARD" },
+  "2026-05-11": { title: "Python Drill — Kth Smallest Element in a BST", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/kth-smallest-element-in-a-bst/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+  "2026-05-12": { title: "Python Drill — Shortest Path in Binary Matrix", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/shortest-path-in-binary-matrix/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-13": { title: "Python Drill — Jump Game II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/jump-game-ii/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-14": { title: "Python Drill — Largest Rectangle in Histogram", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/largest-rectangle-in-histogram/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-05-15": { title: "Python Drill — Palindromic Substrings", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/palindromic-substrings/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-16": { title: "Python Drill — Word Search II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/word-search-ii/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-05-17": { title: "Python Review — redo 2 misses without looking; write idiomatic Python notes", domain: "LEETCODE", type: "REVIEW", estimatedMinutes: 60 },
+  "2026-05-18": { title: "Python Drill — Reconstruct Itinerary", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/reconstruct-itinerary/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-05-19": { title: "Python Drill — Meeting Rooms II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/meeting-rooms-ii/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-20": { title: "Python Drill — Number of Islands II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/number-of-islands-ii/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-21": { title: "Python Drill — Coin Change II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/coin-change-ii/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-22": { title: "Python Drill — Serialize and Deserialize Binary Tree", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/serialize-and-deserialize-binary-tree/", estimatedMinutes: 60, difficulty: "HARD" },
+  "2026-05-23": { title: "Python Drill — Next Greater Element III", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/next-greater-element-iii/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-24": { title: "Python Drill — Sliding Window Maximum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/sliding-window-maximum/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-25": { title: "Python Drill — Random Pick with Weight", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/random-pick-with-weight/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-05-26": { title: "Python Drill — Split Array Largest Sum", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/split-array-largest-sum/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-27": { title: "Python Drill — Maximal Square", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/maximal-square/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-05-28": { title: "Python Drill — Minimum Cost to Connect Sticks", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-cost-to-connect-sticks/", estimatedMinutes: 40, difficulty: "MEDIUM" },
+  "2026-05-29": { title: "Python Drill — Edit Distance", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/edit-distance/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-05-30": { title: "Python Drill — Design In-Memory File System", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/design-in-memory-file-system/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-05-31": { title: "Python Drill — Median of Two Sorted Arrays", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/median-of-two-sorted-arrays/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-06-01": { title: "Python Drill — Evaluate Division", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/evaluate-division/", estimatedMinutes: 50, difficulty: "MEDIUM" },
+  "2026-06-05": { title: "Python Drill — Insert Delete GetRandom O(1)", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/insert-delete-getrandom-o1/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-06-12": { title: "Python Drill — Merge k Sorted Lists", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/merge-k-sorted-lists/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-06-16": { title: "Python Drill — Maximum Product Subarray", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/maximum-product-subarray/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-06-19": { title: "Python Drill — Longest Increasing Path in a Matrix", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/longest-increasing-path-in-a-matrix/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-06-26": { title: "Python Drill — Design Search Autocomplete System", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/design-search-autocomplete-system/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-06-27": { title: "Python Drill — Kth Largest Element in an Array", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/kth-largest-element-in-an-array/", estimatedMinutes: 45, difficulty: "MEDIUM" },
+  "2026-06-28": { title: "Python Drill — N-Queens", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/n-queens/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-02": { title: "Python Drill — Cheapest Flights Within K Stops", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/cheapest-flights-within-k-stops/", estimatedMinutes: 55, difficulty: "MEDIUM" },
+  "2026-07-03": { title: "Python Drill — Max Points on a Line", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/max-points-on-a-line/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-07": { title: "Python Drill — Maximum Profit in Job Scheduling", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/maximum-profit-in-job-scheduling/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-08": { title: "Python Drill — Minimum Number of Refueling Stops", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-number-of-refueling-stops/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-10": { title: "Python Drill — Bus Routes", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/bus-routes/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-14": { title: "Python Drill — Swim in Rising Water", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/swim-in-rising-water/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-15": { title: "Python Drill — Remove Invalid Parentheses", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/remove-invalid-parentheses/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-17": { title: "Python Drill — Shortest Subarray with Sum at Least K", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/shortest-subarray-with-sum-at-least-k/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-20": { title: "Python Drill — Count of Smaller Numbers After Self", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/count-of-smaller-numbers-after-self/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-07-21": { title: "Python Drill — Basic Calculator", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/basic-calculator/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-23": { title: "Python Drill — Race Car", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/race-car/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-07-25": { title: "Python Drill — Minimum Window Subsequence", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-window-subsequence/", estimatedMinutes: 65, difficulty: "HARD" },
+  "2026-07-26": { title: "Python Drill — Word Break II", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/word-break-ii/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-27": { title: "Python Drill — Expression Add Operators", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/expression-add-operators/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-07-28": { title: "Python Drill — Minimum Cost to Make at Least One Valid Path in a Grid", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/minimum-cost-to-make-at-least-one-valid-path-in-a-grid/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-07-30": { title: "Python Drill — Number of Ways to Stay in the Same Place After Some Steps", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/", estimatedMinutes: 60, difficulty: "HARD" },
+  "2026-07-31": { title: "Python Drill — Regular Expression Matching", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/regular-expression-matching/", estimatedMinutes: 75, difficulty: "HARD" },
+  "2026-08-01": { title: "Python Drill — Best Time to Buy and Sell Stock IV", domain: "LEETCODE", type: "PROBLEM", url: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iv/", estimatedMinutes: 70, difficulty: "HARD" },
+  "2026-08-02": { title: "Python Review — timed mixed set: one graph, one DP, one design", domain: "LEETCODE", type: "REVIEW", estimatedMinutes: 75 },
+}
+
+const schedule: DayPlan[] = baseSchedule.map((day) => ({
+  ...day,
+  items: day.items.map((item) =>
+    item.domain === "LEETCODE" ? ADVANCED_LEETCODE_BY_DATE[day.date] ?? item : item
+  ),
+}))
+
 // Roadmap definitions — one per domain/resource
 const ROADMAPS = [
   { title: "Karpathy Zero to Hero", domain: "ML_RECSYS" as Domain, description: "Neural Networks: Zero to Hero — build everything from scratch including GPT", targetRole: "ML Engineer" },
-  { title: "NeetCode 150", domain: "LEETCODE" as Domain, description: "NeetCode 150 problems grouped by pattern", targetRole: "SWE" },
+  { title: "Advanced Python LeetCode", domain: "LEETCODE" as Domain, description: "Shuffled medium-hard interview problems for rebuilding speed in Python", targetRole: "SWE / ML Engineer" },
   { title: "3Blue1Brown — Essence of Linear Algebra", domain: "MATH_STATS" as Domain, description: "16-episode intuition-first linear algebra series" },
   { title: "Stat 110 — Harvard Probability", domain: "MATH_STATS" as Domain, description: "Joe Blitzstein's 34-lecture probability course", targetRole: "Quant / ML" },
   { title: "RecSys MOOC (UMN)", domain: "ML_RECSYS" as Domain, description: "University of Minnesota Recommender Systems Specialization (5 courses)", targetRole: "Netflix RecSys ML" },
@@ -334,19 +406,37 @@ async function main() {
   const roadmapMap: Record<string, string> = {} // title → id
   for (const rm of ROADMAPS) {
     const existing = await db.roadmap.findFirst({
-      where: { userId: user.id, title: rm.title },
+      where:
+        rm.domain === "LEETCODE"
+          ? { userId: user.id, domain: "LEETCODE" }
+          : { userId: user.id, title: rm.title },
     })
     const roadmap = existing
-      ? existing
+      ? await db.roadmap.update({
+          where: { id: existing.id },
+          data: { ...rm, status: "ACTIVE", priority: ROADMAPS.indexOf(rm) },
+        })
       : await db.roadmap.create({
           data: { userId: user.id, ...rm, priority: ROADMAPS.indexOf(rm) },
         })
     roadmapMap[rm.title] = roadmap.id
   }
 
+  const advancedLeetcodeTitles = schedule
+    .flatMap((day) => day.items)
+    .filter((item) => item.domain === "LEETCODE")
+    .map((item) => item.title)
+
+  await db.roadmapItem.deleteMany({
+    where: {
+      roadmapId: roadmapMap["Advanced Python LeetCode"],
+      title: { notIn: advancedLeetcodeTitles },
+    },
+  })
+
   // Helper — map domain → roadmap
   function pickRoadmap(domain: Domain, title: string, type: string): string {
-    if (domain === "LEETCODE") return roadmapMap["NeetCode 150"]
+    if (domain === "LEETCODE") return roadmapMap["Advanced Python LeetCode"]
     if (domain === "REVIEW") return roadmapMap["Weekly Review"]
     if (domain === "CPP_SYSTEMS") return roadmapMap["learncpp.com"]
     if (title.includes("3B1B") || title.includes("Linalg")) return roadmapMap["3Blue1Brown — Essence of Linear Algebra"]
@@ -369,19 +459,23 @@ async function main() {
       const existing = await db.roadmapItem.findFirst({
         where: { roadmapId, title: item.title },
       })
-      if (!existing) {
-        await db.roadmapItem.create({
-          data: {
-            roadmapId,
-            title: item.title,
-            type: item.type,
-            url: item.url,
-            estimatedMinutes: item.estimatedMinutes,
-            difficulty: item.difficulty,
-            scheduledDate,
-            sequenceOrder: i,
-          },
+      const data = {
+        roadmapId,
+        title: item.title,
+        type: item.type,
+        url: item.url,
+        estimatedMinutes: item.estimatedMinutes,
+        difficulty: item.difficulty,
+        scheduledDate,
+        sequenceOrder: i,
+      }
+      if (existing) {
+        await db.roadmapItem.update({
+          where: { id: existing.id },
+          data,
         })
+      } else {
+        await db.roadmapItem.create({ data })
         totalCreated++
       }
     }

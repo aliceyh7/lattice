@@ -9,16 +9,15 @@ import { CheckCircle2, Circle, ExternalLink, Code2 } from "lucide-react"
 import type { Difficulty } from "@prisma/client"
 
 function getTopicFromTitle(title: string): string {
-  if (title.includes("Arrays") || title.includes("Duplicate") || title.includes("Anagram") || title.includes("Two Sum") || title.includes("Anagrams") || title.includes("Top K") || title.includes("Encode") || title.includes("Product") || title.includes("Sudoku") || title.includes("Consecutive")) return "Arrays & Hashing"
-  if (title.includes("Two Pointers") || title.includes("Palindrome") || title.includes("Two Sum II") || title.includes("3Sum") || title.includes("Container") || title.includes("Trapping")) return "Two Pointers"
-  if (title.includes("Sliding Window") || title.includes("Buy") || title.includes("Sell") || title.includes("Longest Substring") || title.includes("Permutation") || title.includes("Anagram in") || title.includes("Minimum Window")) return "Sliding Window"
-  if (title.includes("Stack") || title.includes("Valid Parentheses") || title.includes("Min Stack") || title.includes("RPN") || title.includes("Daily Temperatures") || title.includes("Car Fleet")) return "Stack"
-  if (title.includes("Binary Search") || title.includes("Koko") || title.includes("Rotated") || title.includes("Find Minimum") || title.includes("Search a 2D")) return "Binary Search"
-  if (title.includes("Linked List") || title.includes("Reverse") || title.includes("Merge") || title.includes("Reorder") || title.includes("Detect Cycle") || title.includes("LRU") || title.includes("Copy List")) return "Linked Lists"
-  if (title.includes("Tree") || title.includes("BST") || title.includes("Invert") || title.includes("Max Depth") || title.includes("Same Tree") || title.includes("Subtree") || title.includes("Level Order") || title.includes("Right Side") || title.includes("Good Nodes") || title.includes("Validate") || title.includes("Kth Smallest") || title.includes("Construct")) return "Trees"
-  if (title.includes("Heap") || title.includes("Priority") || title.includes("Median") || title.includes("Task Scheduler") || title.includes("Design Twitter") || title.includes("Last Stone")) return "Heap / Priority Queue"
-  if (title.includes("Graph") || title.includes("BFS") || title.includes("DFS") || title.includes("Island") || title.includes("Clone") || title.includes("Courses") || title.includes("Word Ladder") || title.includes("Surrounded") || title.includes("Pacific")) return "Graphs"
-  if (title.includes("DP") || title.includes("Climbing") || title.includes("Coin") || title.includes("House") || title.includes("Fibonacci") || title.includes("Jump")) return "Dynamic Programming"
+  if (title.includes("Review")) return "Review"
+  if (title.includes("Cache") || title.includes("Design") || title.includes("Autocomplete") || title.includes("Data Stream") || title.includes("GetRandom") || title.includes("File System")) return "Design"
+  if (title.includes("Tree") || title.includes("BST") || title.includes("Serialize") || title.includes("Path Sum") || title.includes("Merge k") || title.includes("Kth Smallest")) return "Trees & Linked Lists"
+  if (title.includes("Ladder") || title.includes("Island") || title.includes("Itinerary") || title.includes("Course") || title.includes("Flights") || title.includes("Bus") || title.includes("Swim") || title.includes("Path in") || title.includes("Division") || title.includes("Accounts")) return "Graphs"
+  if (title.includes("Window") || title.includes("Substring") || title.includes("Subsequence") || title.includes("Subarray") || title.includes("Rain Water") || title.includes("Shortest Subarray")) return "Windows & Prefix"
+  if (title.includes("Median") || title.includes("Kth") || title.includes("Scheduler") || title.includes("Sticks") || title.includes("Refueling")) return "Heap / Binary Search"
+  if (title.includes("Rectangle") || title.includes("Calculator") || title.includes("Parentheses") || title.includes("Greater Element")) return "Stack"
+  if (title.includes("Distance") || title.includes("Ways") || title.includes("Profit") || title.includes("Square") || title.includes("Increasing") || title.includes("Decode") || title.includes("Jump") || title.includes("Coin") || title.includes("Product") || title.includes("Regex") || title.includes("Regular Expression") || title.includes("Job Scheduling") || title.includes("Stock")) return "Dynamic Programming"
+  if (title.includes("Word Search") || title.includes("N-Queens") || title.includes("Expression") || title.includes("Word Break")) return "Backtracking"
   return "Other"
 }
 
@@ -26,7 +25,7 @@ export default async function LeetCodePage() {
   const user = await getUser()
 
   const items = await db.roadmapItem.findMany({
-    where: { roadmap: { userId: user.id, domain: "LEETCODE" } },
+    where: { roadmap: { userId: user.id, domain: "LEETCODE", status: "ACTIVE" } },
     orderBy: [{ scheduledDate: "asc" }, { sequenceOrder: "asc" }],
   })
 
@@ -52,7 +51,9 @@ export default async function LeetCodePage() {
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">LeetCode</h1>
-        <p className="text-sm text-muted-foreground mt-1">NeetCode 150 · {done}/{total} solved</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Advanced Python mix · shuffled medium-hard set · {done}/{total} solved
+        </p>
       </div>
 
       {/* Summary card */}

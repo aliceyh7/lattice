@@ -8,7 +8,7 @@ async function getTodayItems(userId: string) {
   const now = new Date()
   return db.roadmapItem.findMany({
     where: {
-      roadmap: { userId },
+      roadmap: { userId, status: "ACTIVE" },
       scheduledDate: {
         gte: startOfDay(now),
         lte: endOfDay(now),
@@ -33,7 +33,7 @@ async function getDueReviewItems(userId: string) {
   const now = new Date()
   return db.roadmapItem.count({
     where: {
-      roadmap: { userId },
+      roadmap: { userId, status: "ACTIVE" },
       nextReviewAt: { lte: now },
       status: "COMPLETED",
     },
@@ -51,7 +51,7 @@ async function getStreakAndStats(userId: string) {
   })
   const totalToday = await db.roadmapItem.count({
     where: {
-      roadmap: { userId },
+      roadmap: { userId, status: "ACTIVE" },
       scheduledDate: {
         gte: startOfDay(new Date()),
         lte: endOfDay(new Date()),
