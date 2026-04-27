@@ -11,10 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { DOMAIN_META } from "@/lib/domain"
+import { ResourcePreview } from "@/components/resource-preview"
 import type { Domain } from "@prisma/client"
 import {
-  Clock,
-  ExternalLink,
   CheckCircle2,
   Brain,
   AlertCircle,
@@ -30,6 +29,7 @@ type SessionWithRelations = {
   roadmapItem: {
     id: string
     title: string
+    type: string
     url: string | null
     estimatedMinutes: number
     roadmap: { title: string; domain: Domain }
@@ -146,16 +146,13 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
         </div>
       </div>
 
-      {item?.url && (
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Open resource
-        </a>
+      {item && (
+        <ResourcePreview
+          title={item.title}
+          url={item.url}
+          type={item.type}
+          estimatedMinutes={item.estimatedMinutes}
+        />
       )}
 
       <Separator />

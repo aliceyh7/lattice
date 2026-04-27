@@ -4,9 +4,10 @@ import { Domain } from "@prisma/client"
 import { DOMAIN_META, DIFFICULTY_META } from "@/lib/domain"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { ResourceBadge } from "@/components/resource-preview"
 import {
   Clock,
   Play,
@@ -58,7 +59,6 @@ const DOMAIN_ORDER: Domain[] = [
 function TaskCard({ item }: { item: ItemWithRelations }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const meta = DOMAIN_META[item.roadmap.domain]
   const diffMeta = item.difficulty
     ? DIFFICULTY_META[item.difficulty as keyof typeof DIFFICULTY_META]
     : null
@@ -103,18 +103,9 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
                 >
                   {item.title}
                 </span>
-                {item.url && (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <ResourceBadge url={item.url} type={item.type} />
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {item.estimatedMinutes}m
@@ -128,9 +119,17 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
                     {item.quizCards.length} due
                   </span>
                 )}
-                <Badge variant="secondary" className={`text-xs ${meta.bg} ${meta.color} border-0`}>
-                  {item.type.toLowerCase()}
-                </Badge>
+                {item.url && (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-foreground/70 transition-colors hover:text-foreground"
+                  >
+                    Resource
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -196,22 +195,21 @@ export function TodayClient({
       </div>
 
       {/* Stats bar */}
-      <div className="flex items-center gap-6 p-4 rounded-xl border bg-card">
+      <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center sm:gap-6">
         <div>
           <p className="text-xs text-muted-foreground">Remaining</p>
           <p className="text-lg font-semibold">
             {Math.round(totalMinutes / 60)}h {totalMinutes % 60}m
           </p>
         </div>
-        <Separator orientation="vertical" className="h-10" />
+        <Separator orientation="vertical" className="hidden h-10 sm:block" />
         <div>
           <p className="text-xs text-muted-foreground">Progress</p>
           <p className="text-lg font-semibold">
             {stats.completedToday}/{stats.totalToday}
           </p>
         </div>
-        <Separator orientation="vertical" className="h-10" />
-        <div className="flex-1">
+        <div className="sm:col-start-3">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>Day completion</span>
             <span>{progress}%</span>
@@ -220,7 +218,7 @@ export function TodayClient({
         </div>
         {dueReviews > 0 && (
           <>
-            <Separator orientation="vertical" className="h-10" />
+            <Separator orientation="vertical" className="hidden h-10 sm:block" />
             <div>
               <p className="text-xs text-muted-foreground">Reviews due</p>
               <p className="text-lg font-semibold flex items-center gap-1">

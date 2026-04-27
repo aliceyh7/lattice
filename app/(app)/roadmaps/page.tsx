@@ -1,7 +1,8 @@
 import { db } from "@/lib/db"
 import { getUser } from "@/lib/user"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { DOMAIN_META } from "@/lib/domain"
 import type { Domain } from "@prisma/client"
 
@@ -58,6 +59,7 @@ export default async function RoadmapsPage() {
                   <p className="text-xs text-muted-foreground">
                     {rm.items.length}/{rm._count.items}
                   </p>
+                  <Progress value={pct} className="mt-2 h-1.5 w-20" />
                 </div>
               </CardContent>
             </Card>
