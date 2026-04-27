@@ -372,10 +372,17 @@ const ADVANCED_LEETCODE_BY_DATE: Record<string, ScheduleItem> = {
 
 const schedule: DayPlan[] = baseSchedule.map((day) => ({
   ...day,
-  items: day.items.map((item) =>
-    item.domain === "LEETCODE" ? ADVANCED_LEETCODE_BY_DATE[day.date] ?? item : item
-  ),
+  items: day.items
+    .map((item) =>
+      item.domain === "LEETCODE" ? ADVANCED_LEETCODE_BY_DATE[day.date] ?? item : item
+    )
+    .flatMap(splitCombinedLearnCppItem),
 }))
+
+const splitLearnCppTitles = baseSchedule
+  .flatMap((day) => day.items)
+  .filter((item) => item.title.includes(" + learncpp "))
+  .map((item) => item.title)
 
 // Roadmap definitions — one per domain/resource
 const ROADMAPS = [
@@ -434,6 +441,13 @@ async function main() {
     },
   })
 
+  await db.roadmapItem.deleteMany({
+    where: {
+      title: { in: splitLearnCppTitles },
+      sessions: { none: {} },
+    },
+  })
+
   // Helper — map domain → roadmap
   function pickRoadmap(domain: Domain, title: string, type: string): string {
     if (domain === "LEETCODE") return roadmapMap["Advanced Python LeetCode"]
@@ -483,6 +497,30 @@ async function main() {
 
   console.log(`Created ${totalCreated} schedule items across ${schedule.length} days`)
   console.log("Done! Seed complete.")
+}
+
+function splitCombinedLearnCppItem(item: ScheduleItem): ScheduleItem[] {
+  const marker = " + learncpp "
+  if (!item.title.includes(marker)) return [item]
+
+  const [primaryTitle, learnCppSuffix] = item.title.split(marker)
+  const cppMinutes = Math.min(35, Math.max(20, Math.round(item.estimatedMinutes * 0.4)))
+  const primaryMinutes = Math.max(20, item.estimatedMinutes - cppMinutes)
+
+  return [
+    {
+      ...item,
+      title: primaryTitle,
+      estimatedMinutes: primaryMinutes,
+    },
+    {
+      title: `learncpp ${learnCppSuffix}`,
+      domain: "CPP_SYSTEMS",
+      type: "READING",
+      url: "https://www.learncpp.com/",
+      estimatedMinutes: cppMinutes,
+    },
+  ]
 }
 
 main()

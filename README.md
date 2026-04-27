@@ -89,6 +89,8 @@ Main entities:
 
 Seed data is in `prisma/seed.ts`. Running `npm run db:seed` upserts the default user, roadmaps, and scheduled items. The seed currently keeps one active LeetCode roadmap named `Advanced Python LeetCode` and removes stale old LeetCode items from that roadmap.
 
+The seed also splits combined schedule rows such as `Stat 110 lecture 29 + learncpp ch 12.1-12.4` into separate roadmap items so C++ reading stays under `learncpp.com`.
+
 ## Publish Drafts
 
 The publish flow is:

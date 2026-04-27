@@ -102,9 +102,12 @@ Seed data lives in `prisma/seed.ts`.
 3. Reuses the existing LeetCode roadmap by domain.
 4. Renames/replaces it with `Advanced Python LeetCode`.
 5. Deletes stale LeetCode items not in the current advanced plan.
-6. Creates or updates scheduled roadmap items.
+6. Splits combined math/C++ rows like `Stat 110 lecture 29 + learncpp ch 12.1-12.4` into separate roadmap items.
+7. Creates or updates scheduled roadmap items.
 
 The current LeetCode plan is a shuffled medium-hard Python set, not NeetCode 150. It is designed for someone who has already solved many problems and wants to rebuild speed in Python.
+
+Each `RoadmapItem` should belong to one conceptual roadmap. Do not combine learncpp chapters into math roadmap rows; keep C++ reading under `learncpp.com`.
 
 ## Main Routes
 
