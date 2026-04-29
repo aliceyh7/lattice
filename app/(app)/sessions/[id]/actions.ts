@@ -1,8 +1,23 @@
 "use server"
 
 import { db } from "@/lib/db"
+import {
+  getDateStringInTimeZone,
+  getUtcStartOfLocalDate,
+  isSameLocalDate,
+} from "@/lib/local-date"
 import { getUser } from "@/lib/user"
 import { revalidatePath } from "next/cache"
+
+function hasMeaningfulNoteContent(note: string) {
+  const text = note
+    .replace(/<img\b[^>]*>/gi, " image ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .trim()
+
+  return text.length > 0
+}
 
 export async function completeSession({
   sessionId,
@@ -31,7 +46,9 @@ export async function completeSession({
     (endedAt.getTime() - session.startedAt.getTime()) / 60000
   )
 
-  if (noteMarkdown.trim()) {
+  const hasNoteContent = hasMeaningfulNoteContent(noteMarkdown)
+
+  if (hasNoteContent) {
     const existingNoteId = session.notes[0]?.id
     if (existingNoteId) {
       await db.note.update({
@@ -58,18 +75,32 @@ export async function completeSession({
       actualMinutes,
       keyTakeaways: keyTakeaways || null,
       confusions: confusions || null,
-      artifactCreated: noteMarkdown.trim().length > 50,
+      artifactCreated: hasNoteContent && noteMarkdown.trim().length > 50,
     },
   })
 
   if (session.roadmapItemId) {
     const nextReviewAt = new Date()
     nextReviewAt.setDate(nextReviewAt.getDate() + (struggled ? 1 : 7))
+    const completedOnScheduledDay =
+      session.roadmapItem?.scheduledDate &&
+      isSameLocalDate(
+        session.roadmapItem.scheduledDate,
+        session.startedAt,
+        user.timezone
+      )
+    const sessionDateString = getDateStringInTimeZone(
+      session.startedAt,
+      user.timezone
+    )
 
     await db.roadmapItem.update({
       where: { id: session.roadmapItemId },
       data: {
         status: "COMPLETED",
+        scheduledDate: completedOnScheduledDay
+          ? undefined
+          : getUtcStartOfLocalDate(sessionDateString, user.timezone),
         struggled,
         lastReviewedAt: endedAt,
         nextReviewAt: struggled ? nextReviewAt : undefined,

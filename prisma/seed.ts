@@ -20,6 +20,7 @@ type ScheduleItem = {
   domain: Domain
   type: ItemType
   url?: string
+  description?: string
   estimatedMinutes: number
   difficulty?: Difficulty
 }
@@ -381,9 +382,27 @@ const LEARNCPP_MAINTENANCE_TITLES = new Set([
 ])
 
 const RECSYS_PROJECT_BY_DATE: Record<string, ScheduleItem[]> = {
-  "2026-04-29": [{ title: "Project: set up RecSys notebooks repo", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
-  "2026-05-01": [{ title: "Project: matrix factorization skeleton", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
-  "2026-05-05": [{ title: "Project: matrix factorization forward pass", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 60 }],
+  "2026-04-29": [{
+    title: "Project: set up RecSys notebooks repo",
+    domain: "ML_RECSYS",
+    type: "PROJECT",
+    estimatedMinutes: 45,
+    description: "Create the working repo that will hold every recommender-system mini-implementation. Use the 45 minutes for real setup, not just opening a notebook: create a README with the project goal and running instructions; add folders for notebooks, src/recsys, data/sample, and notes; create a Python environment file with numpy, pandas, matplotlib, scikit-learn, torch, and jupyter; add a first notebook called 00_setup_check.ipynb that imports the libraries, builds a 5-user x 6-item toy ratings/interactions table, prints sparsity, and writes one paragraph on what the repo will grow into. Done means the environment starts, the notebook runs top-to-bottom, and the README tells future-you how to continue with matrix factorization on May 1.",
+  }],
+  "2026-05-01": [{
+    title: "Project: matrix factorization skeleton",
+    domain: "ML_RECSYS",
+    type: "PROJECT",
+    estimatedMinutes: 75,
+    description: "Build the first real recommender implementation earlier than the original plan. In the RecSys notebooks repo, create 01_matrix_factorization.ipynb plus a tiny reusable module in src/recsys/data.py. Define a toy user-item matrix, randomly initialize user and item embeddings, implement predicted rating = user_embedding dot item_embedding, and write down the shapes for every tensor. Done means the notebook runs, prints one prediction, and has TODO cells for loss, training loop, and evaluation.",
+  }],
+  "2026-05-05": [{
+    title: "Project: matrix factorization forward pass + MSE loss",
+    domain: "ML_RECSYS",
+    type: "PROJECT",
+    estimatedMinutes: 75,
+    description: "Upgrade the skeleton into a trainable explicit-feedback model. Add an MSE loss over observed ratings only, confirm tensor shapes, and run one manual forward/loss pass before adding any optimizer. Done means you can point to user embeddings, item embeddings, observed interactions, predictions, and scalar loss without hand-waving.",
+  }],
   "2026-05-07": [{ title: "Project: train MF on toy user-item data", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
   "2026-05-09": [{ title: "Project: MF loss curves and notes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
   "2026-05-12": [{ title: "Project: BPR loss implementation", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 75 }],
@@ -418,8 +437,33 @@ const RECSYS_PROJECT_BY_DATE: Record<string, ScheduleItem[]> = {
 }
 
 const SYNTHESIS_REVIEW_BY_DATE: Record<string, ScheduleItem[]> = {
+  "2026-04-30": [{
+    title: "Paper skim: Koren et al. MF sections 1-2",
+    domain: "ML_RECSYS",
+    type: "PAPER",
+    url: "https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf",
+    estimatedMinutes: 35,
+    difficulty: "MEDIUM",
+    description: "Do a targeted skim, not a full paper read. Read the abstract, introduction, and sections 1-2 of Koren/Bell/Volinsky. Capture three things: what collaborative filtering is trying to predict, why matrix factorization became the central baseline, and one phrase you do not understand yet. Stop at 35 minutes even if the math is incomplete; this is early exposure before implementation.",
+  }],
   "2026-05-03": [{ title: "Publish/Synthesis: what backprop computes", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
+  "2026-05-06": [{
+    title: "Stretch: compare MF paper idea to your toy notebook",
+    domain: "ML_RECSYS",
+    type: "REVIEW",
+    estimatedMinutes: 25,
+    description: "Bridge paper to implementation. In notes, write five bullets: what your toy matrix factorization model already matches from Koren et al., what it ignores, whether explicit ratings and implicit feedback feel different, how regularization would enter your loss, and one experiment to run before BPR.",
+  }],
   "2026-05-10": [{ title: "Review: explain matrix factorization in 60 seconds", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
+  "2026-05-13": [{
+    title: "Paper skim: Rendle BPR intro and optimization objective",
+    domain: "ML_RECSYS",
+    type: "PAPER",
+    url: "https://arxiv.org/abs/1205.2618",
+    estimatedMinutes: 35,
+    difficulty: "MEDIUM",
+    description: "Read the abstract, intro, and the objective definition. Your goal is to understand why pairwise ranking is different from predicting ratings. Write a short note with the meaning of user u, positive item i, negative item j, and why sampled negatives matter. Do not full-read the paper yet.",
+  }],
   "2026-05-17": [{ title: "Publish/Synthesis: MF vs BPR comparison draft", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
   "2026-05-24": [{ title: "Publish/Synthesis: how to evaluate recommenders", domain: "ML_RECSYS", type: "PROJECT", estimatedMinutes: 45 }],
   "2026-05-31": [{ title: "Review: explain retrieval vs ranking", domain: "REVIEW", type: "REVIEW", estimatedMinutes: 30 }],
@@ -463,6 +507,34 @@ const schedule: DayPlan[] = scheduleDates.map((date) => {
     ],
   }
 })
+
+function defaultItemDescription(item: ScheduleItem): string | undefined {
+  if (item.type === "PROJECT") {
+    return [
+      "Before starting, turn this title into a concrete artifact and keep the scope small enough to finish.",
+      "Define the target file/notebook, the minimum runnable result, and the evidence that it worked.",
+      "Done means there is a committed artifact or note, not just time spent reading.",
+    ].join(" ")
+  }
+
+  if (item.type === "PAPER") {
+    return [
+      "Use an active paper-reading pass: identify the problem, the core method, the evidence, and one open question.",
+      "If this is a skim, stop on time and write what you would need to reread later.",
+      "Done means you have a short note that connects the paper to the RecSys implementation track.",
+    ].join(" ")
+  }
+
+  if (item.type === "REVIEW") {
+    return [
+      "Make retrieval practice concrete.",
+      "Close notes, explain the idea from memory, then write the gaps or next correction.",
+      "Done means the note says what was remembered, what was weak, and what to revisit.",
+    ].join(" ")
+  }
+
+  return undefined
+}
 
 const splitLearnCppTitles = baseSchedule
   .flatMap((day) => day.items)
@@ -589,6 +661,7 @@ async function main() {
       const data = {
         roadmapId,
         title: item.title,
+        description: item.description ?? defaultItemDescription(item),
         type: item.type,
         url: item.url,
         estimatedMinutes: item.estimatedMinutes,

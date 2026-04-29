@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { getDateStringInTimeZone } from "@/lib/local-date"
 import { getUser } from "@/lib/user"
 import { PublishClient } from "./publish-client"
 
@@ -47,6 +48,11 @@ export default async function PublishPage() {
     bodyMarkdown: note.bodyMarkdown,
     publishable: note.publishable,
     createdAt: note.createdAt.toISOString(),
+    dayKey: getDateStringInTimeZone(
+      note.session?.startedAt ?? note.createdAt,
+      user.timezone
+    ),
+    sessionStartedAt: note.session?.startedAt.toISOString() ?? null,
     roadmapTitle: note.session?.roadmapItem?.roadmap.title || null,
     itemTitle: note.session?.roadmapItem?.title || null,
   }))

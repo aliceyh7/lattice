@@ -23,5 +23,37 @@ export default async function SessionPage({
 
   if (!session) notFound()
 
-  return <SessionEditor session={session} />
+  const continuationNote =
+    !session.notes.length && session.roadmapItem
+      ? await db.note.findFirst({
+          where: {
+            bodyMarkdown: { not: "" },
+            session: {
+              is: {
+                userId: user.id,
+                id: { not: session.id },
+                roadmapItem: {
+                  roadmapId: session.roadmapItem.roadmapId,
+                },
+              },
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            bodyMarkdown: true,
+            updatedAt: true,
+            session: {
+              select: {
+                roadmapItem: {
+                  select: { title: true },
+                },
+              },
+            },
+          },
+        })
+      : null
+
+  return <SessionEditor session={session} continuationNote={continuationNote} />
 }

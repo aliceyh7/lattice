@@ -1,6 +1,7 @@
 "use client"
 
 import { useEditor, EditorContent } from "@tiptap/react"
+import { mergeAttributes, Node } from "@tiptap/core"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
 import { useEffect, useState, useTransition } from "react"
@@ -18,6 +19,7 @@ import {
   Brain,
   AlertCircle,
   ArrowLeft,
+  AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
 import { completeSession } from "./actions"
@@ -29,6 +31,7 @@ type SessionWithRelations = {
   roadmapItem: {
     id: string
     title: string
+    description: string | null
     type: string
     url: string | null
     estimatedMinutes: number
@@ -36,6 +39,43 @@ type SessionWithRelations = {
   } | null
   notes: { id: string; bodyMarkdown: string; title: string | null }[]
 }
+
+type ContinuationNote = {
+  id: string
+  title: string | null
+  bodyMarkdown: string
+  updatedAt: Date
+  session: {
+    roadmapItem: { title: string } | null
+  } | null
+} | null
+
+const InlineImage = Node.create({
+  name: "image",
+  group: "block",
+  atom: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+      title: { default: null },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: "img[src]" }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "img",
+      mergeAttributes(HTMLAttributes, {
+        class: "my-3 max-h-[520px] max-w-full rounded-md border object-contain",
+      }),
+    ]
+  },
+})
 
 function useTimer(startedAt: Date) {
   const [elapsed, setElapsed] = useState(0)
@@ -54,7 +94,13 @@ function useTimer(startedAt: Date) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
 }
 
-export function SessionEditor({ session }: { session: SessionWithRelations }) {
+export function SessionEditor({
+  session,
+  continuationNote,
+}: {
+  session: SessionWithRelations
+  continuationNote: ContinuationNote
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [keyTakeaways, setKeyTakeaways] = useState("")
@@ -65,22 +111,60 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
 
   const item = session.roadmapItem
   const meta = item ? DOMAIN_META[item.roadmap.domain] : null
+  const needsBrief =
+    item && !item.description && ["PROJECT", "PAPER", "REVIEW"].includes(item.type)
 
   const existingNote = session.notes[0]
+  const initialContent = existingNote?.bodyMarkdown || continuationNote?.bodyMarkdown || ""
 
   const editor = useEditor({
     extensions: [
       StarterKit,
+      InlineImage,
       Placeholder.configure({
         placeholder:
           "Start writing your notes… What's the core idea? What was surprising?",
       }),
     ],
-    content: existingNote?.bodyMarkdown || "",
+    content: initialContent,
     editorProps: {
       attributes: {
         class:
           "min-h-[300px] prose prose-sm max-w-none focus:outline-none px-1",
+      },
+      handleDrop(view, event) {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((file) =>
+          file.type.startsWith("image/")
+        )
+
+        if (!files.length) return false
+
+        event.preventDefault()
+        const coordinates = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        })
+        const insertAt = coordinates?.pos
+
+        files.forEach((file) => {
+          const reader = new FileReader()
+          reader.onload = () => {
+            const src = String(reader.result)
+            const imageNode = {
+              type: "image",
+              attrs: { src, alt: file.name, title: file.name },
+            }
+
+            if (insertAt == null) {
+              editor?.chain().focus().insertContent(imageNode).run()
+            } else {
+              editor?.chain().focus().insertContentAt(insertAt, imageNode).run()
+            }
+          }
+          reader.readAsDataURL(file)
+        })
+
+        return true
       },
     },
     onUpdate({ editor }) {
@@ -90,7 +174,7 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
 
   function handleComplete(struggled: boolean) {
     startTransition(async () => {
-      const markdown = editor?.getText() || ""
+      const markdown = editor?.getHTML() || ""
       await completeSession({
         sessionId: session.id,
         noteMarkdown: markdown,
@@ -137,6 +221,20 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
               {item.roadmap.title}
             </p>
           )}
+          {item?.description && (
+            <p className="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-muted-foreground">
+              {item.description}
+            </p>
+          )}
+          {needsBrief && (
+            <div className="mt-3 flex max-w-3xl gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                This item needs a concrete brief before starting: define the
+                artifact, the steps, and the done condition.
+              </span>
+            </div>
+          )}
         </div>
         <div className="text-right shrink-0">
           <div className="text-2xl font-mono font-medium tabular-nums">
@@ -161,9 +259,19 @@ export function SessionEditor({ session }: { session: SessionWithRelations }) {
 
       {/* Notes editor */}
       <div>
-        <h2 className="text-sm font-medium mb-2">Notes</h2>
-        <div className="rounded-lg border bg-card p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Notes</h2>
+          {continuationNote && !existingNote && (
+            <span className="text-xs text-muted-foreground">
+              Continuing from {continuationNote.session?.roadmapItem?.title ?? continuationNote.title ?? "latest roadmap note"}
+            </span>
+          )}
+        </div>
+        <div className="rounded-lg border bg-card p-4 transition-colors focus-within:border-foreground/40">
           <EditorContent editor={editor} />
+          <div className="mt-3 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+            Drop images into the note editor to embed them.
+          </div>
         </div>
       </div>
 

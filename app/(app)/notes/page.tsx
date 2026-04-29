@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { getUser } from "@/lib/user"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { noteToPlainText } from "@/lib/note-content"
 import { format } from "date-fns"
 import { FileText } from "lucide-react"
 
@@ -49,7 +50,7 @@ export default async function NotesPage() {
                       {note.title || note.session?.roadmapItem?.title || "Untitled note"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {note.bodyMarkdown.slice(0, 120)}…
+                      {noteToPlainText(note.bodyMarkdown).slice(0, 120)}…
                     </p>
                   </div>
                   <div className="text-right shrink-0">

@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 import { ResourceBadge } from "@/components/resource-preview"
 import { buttonVariants } from "@/components/ui/button"
+import { noteToPlainText, redactEmbeddedImages } from "@/lib/note-content"
 import Link from "next/link"
 import {
   Clock,
   Play,
   SkipForward,
   CalendarClock,
+  Check,
   RotateCcw,
   CheckCircle2,
   Circle,
@@ -22,16 +25,22 @@ import {
   Brain,
   ChevronLeft,
   ChevronRight,
+  Flame,
+  NotebookText,
+  TextSearch,
   Undo2,
+  X,
+  AlertTriangle,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { useState, useTransition } from "react"
-import { updateItemStatus, startSession } from "./actions"
+import { useEffect, useState, useTransition } from "react"
+import { updateItemStatus, startSession, updateDailyNote } from "./actions"
 
 type ItemWithRelations = {
   id: string
   title: string
+  description: string | null
   type: string
   url: string | null
   estimatedMinutes: number
@@ -48,11 +57,31 @@ type Props = {
   totalMinutes: number
   dueReviews: number
   stats: { completedToday: number; totalToday: number }
+  notes: Array<{
+    id: string
+    title: string
+    bodyMarkdown: string
+    roadmapTitle: string | null
+    itemTitle: string | null
+    domain: Domain | null
+  }>
+  activity: {
+    currentStreak: number
+    days: Array<{
+      date: string
+      count: number
+      href: string
+      isSelected: boolean
+      isToday: boolean
+    }>
+  }
   dateLabel: string
   previousDateHref: string
   nextDateHref: string
   todayHref: string
   isToday: boolean
+  selectedDate: string
+  hasExplicitDate: boolean
 }
 
 const DOMAIN_ORDER: Domain[] = [
@@ -65,6 +94,22 @@ const DOMAIN_ORDER: Domain[] = [
   "OTHER",
 ]
 
+function summarizeNote(markdown: string) {
+  const lines = noteToPlainText(markdown)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-*]\s+/, ""))
+
+  const heading = lines[0] ?? "Untitled note"
+  const bullets = lines
+    .slice(1)
+    .filter((line) => !/^#+\s/.test(line))
+    .slice(0, 4)
+
+  return { heading, bullets }
+}
+
 function TaskCard({ item }: { item: ItemWithRelations }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -73,6 +118,8 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
     : null
   const isDone = item.status === "COMPLETED"
   const isSkipped = item.status === "SKIPPED"
+  const needsBrief =
+    !item.description && ["PROJECT", "PAPER", "REVIEW"].includes(item.type)
 
   function handleAction(action: "TODO" | "SKIPPED" | "DEFERRED") {
     startTransition(async () => {
@@ -113,6 +160,20 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
                   {item.title}
                 </span>
               </div>
+              {item.description && (
+                <p className="mb-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
+                  {item.description}
+                </p>
+              )}
+              {needsBrief && (
+                <div className="mb-2 flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    This item needs a concrete brief before starting: define the
+                    artifact, the steps, and the done condition.
+                  </span>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 <ResourceBadge url={item.url} type={item.type} />
                 <span className="flex items-center gap-1">
@@ -195,23 +256,164 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
   )
 }
 
+function DailyNoteCard({
+  note,
+}: {
+  note: Props["notes"][number]
+}) {
+  const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
+  const [value, setValue] = useState(note.bodyMarkdown)
+  const [isPending, startTransition] = useTransition()
+  const meta = note.domain ? DOMAIN_META[note.domain] : null
+  const summary = summarizeNote(note.bodyMarkdown)
+
+  function save() {
+    startTransition(async () => {
+      await updateDailyNote(note.id, value)
+      setIsEditing(false)
+      router.refresh()
+      toast.success("Note updated")
+    })
+  }
+
+  function cancel() {
+    setValue(note.bodyMarkdown)
+    setIsEditing(false)
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {meta && (
+            <Badge className={`${meta.bg} ${meta.color} border-0 font-medium`}>
+              {meta.label}
+            </Badge>
+          )}
+          <p className="min-w-0 flex-1 truncate text-sm font-medium">
+            {note.title}
+          </p>
+          <div className="flex gap-1.5">
+            {isEditing ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-xs"
+                  disabled={isPending}
+                  onClick={cancel}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  disabled={isPending}
+                  onClick={save}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Save
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {isEditing ? (
+          <Textarea
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            className="min-h-56 resize-y font-mono text-xs leading-relaxed"
+          />
+        ) : (
+          <>
+            <div>
+              <p className="text-sm font-medium">{summary.heading}</p>
+              {summary.bullets.length > 0 && (
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {summary.bullets.map((bullet, index) => (
+                    <li key={`${note.id}-${index}`} className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" />
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <details className="group rounded-lg border bg-muted/30 px-3 py-2">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <TextSearch className="h-3.5 w-3.5" />
+                Raw note
+                <span className="ml-auto group-open:hidden">Show</span>
+                <span className="ml-auto hidden group-open:inline">Hide</span>
+              </summary>
+              <pre className="mt-3 whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
+                {redactEmbeddedImages(note.bodyMarkdown.trim())}
+              </pre>
+            </details>
+          </>
+        )}
+
+        {note.roadmapTitle && (
+          <p className="text-xs text-muted-foreground">{note.roadmapTitle}</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function TodayClient({
   grouped,
   totalMinutes,
   dueReviews,
   stats,
+  notes,
+  activity,
   dateLabel,
   previousDateHref,
   nextDateHref,
   todayHref,
   isToday,
+  selectedDate,
+  hasExplicitDate,
 }: Props) {
+  const router = useRouter()
   const progress =
     stats.totalToday > 0
       ? Math.round((stats.completedToday / stats.totalToday) * 100)
       : 0
 
   const orderedDomains = DOMAIN_ORDER.filter((d) => grouped[d]?.length)
+
+  useEffect(() => {
+    if (hasExplicitDate) return
+
+    const now = new Date()
+    const browserDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-")
+
+    if (browserDate !== selectedDate) {
+      router.replace(`/today?date=${browserDate}`)
+    }
+  }, [hasExplicitDate, router, selectedDate])
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
@@ -255,6 +457,44 @@ export function TodayClient({
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Activity strip */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2">
+        <div className="flex items-center gap-2 text-sm">
+          <Flame className="h-4 w-4 text-amber-500" />
+          <span className="font-medium">
+            {activity.currentStreak} day{activity.currentStreak !== 1 ? "s" : ""} streak
+          </span>
+          <span className="text-xs text-muted-foreground">last 14 days</span>
+        </div>
+        <div className="flex gap-1">
+          {activity.days.slice(-14).map((day) => {
+            const intensity =
+              day.count === 0
+                ? "bg-muted"
+                : day.count === 1
+                  ? "bg-emerald-200 dark:bg-emerald-900/50"
+                  : day.count === 2
+                    ? "bg-emerald-400 dark:bg-emerald-700"
+                    : "bg-emerald-600 dark:bg-emerald-500"
+
+            return (
+              <Link
+                key={day.date}
+                href={day.href}
+                title={`${day.date}: ${day.count} completed session${day.count !== 1 ? "s" : ""}`}
+                className={`h-3.5 w-3.5 rounded-[3px] ring-offset-background transition-transform hover:scale-125 ${intensity} ${
+                  day.isSelected
+                    ? "ring-2 ring-foreground ring-offset-2"
+                    : day.isToday
+                      ? "ring-1 ring-foreground/40"
+                      : ""
+                }`}
+              />
+            )
+          })}
         </div>
       </div>
 
@@ -333,6 +573,41 @@ export function TodayClient({
           )
         })
       )}
+
+      {/* Notes summary */}
+      <div className="space-y-3 border-t pt-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold">
+              <NotebookText className="h-4 w-4" />
+              Daily notes
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {notes.length} note{notes.length !== 1 ? "s" : ""} from this day
+            </p>
+          </div>
+          {notes.length > 0 && (
+            <Link
+              href="/publish"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Publish
+            </Link>
+          )}
+        </div>
+
+        {notes.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+            Notes from completed sessions will appear here.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {notes.map((note) => (
+              <DailyNoteCard key={note.id} note={note} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

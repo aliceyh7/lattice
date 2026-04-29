@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { db } from "@/lib/db"
+import { getLocalDateRange } from "@/lib/local-date"
+import { noteToPlainText } from "@/lib/note-content"
 import { getUser } from "@/lib/user"
 
 export const runtime = "nodejs"
 
 const requestSchema = z.object({
-  noteId: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   format: z.enum(["x-thread", "medium"]),
 })
 
@@ -31,10 +33,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 })
   }
 
-  const note = await db.note.findFirst({
+  const { start, end } = getLocalDateRange(parsed.data.date, user.timezone)
+  const notes = await db.note.findMany({
     where: {
-      id: parsed.data.noteId,
-      session: { userId: user.id },
+      bodyMarkdown: { not: "" },
+      session: {
+        userId: user.id,
+        startedAt: {
+          gte: start,
+          lt: end,
+        },
+      },
     },
     include: {
       session: {
@@ -45,10 +54,11 @@ export async function POST(request: Request) {
         },
       },
     },
+    orderBy: [{ session: { startedAt: "asc" } }, { createdAt: "asc" }],
   })
 
-  if (!note || !note.bodyMarkdown.trim()) {
-    return NextResponse.json({ error: "Note not found" }, { status: 404 })
+  if (notes.length === 0) {
+    return NextResponse.json({ error: "No notes found for that day" }, { status: 404 })
   }
 
   const apiKey = process.env.OPENAI_API_KEY
@@ -61,15 +71,20 @@ export async function POST(request: Request) {
 
   const format = parsed.data.format
   const model = process.env.OPENAI_PUBLISH_MODEL || "gpt-5.4-mini"
-  const item = note.session?.roadmapItem
   const draftPrompt = buildPrompt({
     format,
-    title: note.title || item?.title || "Untitled note",
-    roadmap: item?.roadmap.title || "Learning notes",
-    sourceUrl: note.sourceUrl || item?.url || null,
-    keyTakeaways: note.session?.keyTakeaways || null,
-    confusions: note.session?.confusions || null,
-    bodyMarkdown: note.bodyMarkdown,
+    date: parsed.data.date,
+    notes: notes.map((note) => {
+      const item = note.session?.roadmapItem
+      return {
+        title: note.title || item?.title || "Untitled note",
+        roadmap: item?.roadmap.title || "Learning notes",
+        sourceUrl: note.sourceUrl || item?.url || null,
+        keyTakeaways: note.session?.keyTakeaways || null,
+        confusions: note.session?.confusions || null,
+        bodyMarkdown: note.bodyMarkdown,
+      }
+    }),
   })
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -92,7 +107,7 @@ export async function POST(request: Request) {
           content: draftPrompt,
         },
       ],
-      max_output_tokens: format === "medium" ? 2600 : 1200,
+      max_output_tokens: format === "medium" ? 3600 : 1800,
     }),
   })
 
@@ -118,50 +133,56 @@ export async function POST(request: Request) {
 
 function buildPrompt({
   format,
-  title,
-  roadmap,
-  sourceUrl,
-  keyTakeaways,
-  confusions,
-  bodyMarkdown,
+  date,
+  notes,
 }: {
   format: "x-thread" | "medium"
-  title: string
-  roadmap: string
-  sourceUrl: string | null
-  keyTakeaways: string | null
-  confusions: string | null
-  bodyMarkdown: string
+  date: string
+  notes: Array<{
+    title: string
+    roadmap: string
+    sourceUrl: string | null
+    keyTakeaways: string | null
+    confusions: string | null
+    bodyMarkdown: string
+  }>
 }) {
   const target =
     format === "x-thread"
       ? [
-          "Create an X thread.",
-          "Use 5-8 posts.",
-          "Number each post like 1/7.",
+          "Create an X reply chain from all notes for this day.",
+          "Use 5-10 posts total, where each post is meant to be posted as a reply to the previous post.",
+          "Number each post like 1/8.",
           "Keep every post under 260 characters.",
           "Make the first post a strong hook.",
+          "Synthesize across the day's notes instead of making one disconnected mini-thread per note.",
           "End with one practical takeaway.",
         ].join("\n")
       : [
-          "Create a Medium-style blog draft.",
-          "Include a title, subtitle, short intro, 3-5 sections, and a concise takeaway.",
+          "Create one Medium-style blog draft from all notes for this day.",
+          "Do not create separate posts per note.",
+          "Include a title, subtitle, short intro, 4-6 sections, and a concise takeaway.",
           "Use Markdown headings.",
-          "Keep it specific and grounded in the note.",
+          "Synthesize the notes into one coherent learning narrative while preserving concrete details.",
         ].join("\n")
 
   return [
     target,
     "",
     "Context:",
-    `Title: ${title}`,
-    `Roadmap: ${roadmap}`,
-    sourceUrl ? `Source URL: ${sourceUrl}` : null,
-    keyTakeaways ? `Key takeaways: ${keyTakeaways}` : null,
-    confusions ? `Open questions/confusions: ${confusions}` : null,
+    `Date: ${date}`,
+    `Notes included: ${notes.length}`,
     "",
-    "Raw note:",
-    bodyMarkdown,
+    "Raw notes:",
+    ...notes.flatMap((note, index) => [
+      "",
+      `Note ${index + 1}: ${note.title}`,
+      `Roadmap: ${note.roadmap}`,
+      note.sourceUrl ? `Source URL: ${note.sourceUrl}` : null,
+      note.keyTakeaways ? `Key takeaways: ${note.keyTakeaways}` : null,
+      note.confusions ? `Open questions/confusions: ${note.confusions}` : null,
+      noteToPlainText(note.bodyMarkdown),
+    ]),
   ]
     .filter(Boolean)
     .join("\n")

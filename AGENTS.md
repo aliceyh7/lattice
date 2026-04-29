@@ -112,6 +112,33 @@ The current LeetCode plan is a shuffled medium-hard Python set, not NeetCode 150
 
 Each `RoadmapItem` should belong to one conceptual roadmap. Do not combine learncpp chapters into math roadmap rows; keep C++ reading under `learncpp.com`. Keep C++ light until the Netflix ramp ends around August 3; RecSys, ML projects, LeetCode, reviews, and publishable artifacts should dominate.
 
+## Curriculum Planning Rules
+
+The curriculum should not feel like a passive beginner course. Favor implementation, paper exposure, and synthesis earlier than a traditional slow ramp:
+
+- Start RecSys papers early with targeted skims before full reads. A skim should have a strict timebox and a concrete note objective.
+- Pair papers with notebooks quickly. For example, Koren matrix factorization should connect to the toy MF notebook within the same week.
+- Prefer small runnable artifacts over vague study blocks: notebooks, toy models, metrics functions, diagrams, or publishable notes.
+- Keep early RecSys work hands-on. Matrix factorization should appear in week 1, BPR concepts in week 3 or earlier, and later work should build toward two-tower retrieval, ranking, offline evaluation, and system-level synthesis.
+- Use stretch blocks when the schedule feels too slow: paper skim, mini experiment, harder LeetCode, or paper-to-implementation comparison. Keep them bounded so the daily plan remains executable.
+- Preserve fundamentals, but make them serve the projects. Math and probability items should help explain embeddings, losses, ranking objectives, metrics, or sampling.
+
+## Roadmap Item Instruction Quality
+
+Avoid incomplete UI instructions. A task title alone is not enough for `PROJECT`, `PAPER`, or `REVIEW` items.
+
+Every custom `PROJECT`, `PAPER`, or `REVIEW` seed item should include a `description` unless the default generated brief is genuinely sufficient. Good descriptions answer:
+
+- What should be produced?
+- What are the concrete steps or reading scope?
+- What is explicitly out of scope?
+- What does “done” mean?
+- How does this connect to the surrounding curriculum?
+
+`prisma/seed.ts` has `defaultItemDescription()` as a safety net for project, paper, and review items without custom descriptions. Treat that as a fallback, not the target quality bar. If adding an important item, write a specific description.
+
+The Today and session UIs show `RoadmapItem.description`. They also warn when a `PROJECT`, `PAPER`, or `REVIEW` item has no brief. Do not remove that warning without replacing it with an equal or stronger guardrail.
+
 ## Main Routes
 
 - `/today` - daily schedule, resource links, progress, start session actions

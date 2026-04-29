@@ -18,6 +18,8 @@ type PublishNote = {
   bodyMarkdown: string
   publishable: boolean
   createdAt: string
+  dayKey: string
+  sessionStartedAt: string | null
   roadmapTitle: string | null
   itemTitle: string | null
 }
@@ -37,20 +39,38 @@ export function PublishClient({
   notes: PublishNote[]
   channels: Channel[]
 }) {
-  const [selectedNoteId, setSelectedNoteId] = useState(notes[0]?.id || "")
+  const dayGroups = useMemo(() => {
+    const groups = new Map<string, PublishNote[]>()
+    for (const note of notes) {
+      const existing = groups.get(note.dayKey) ?? []
+      existing.push(note)
+      groups.set(note.dayKey, existing)
+    }
+
+    return Array.from(groups.entries()).map(([dayKey, dayNotes]) => ({
+      dayKey,
+      notes: dayNotes.sort(
+        (a, b) =>
+          new Date(a.sessionStartedAt ?? a.createdAt).getTime() -
+          new Date(b.sessionStartedAt ?? b.createdAt).getTime()
+      ),
+    }))
+  }, [notes])
+
+  const [selectedDay, setSelectedDay] = useState(dayGroups[0]?.dayKey || "")
   const [formatType, setFormatType] = useState<PublishFormat>("x-thread")
   const [draft, setDraft] = useState("")
   const [model, setModel] = useState("")
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
 
-  const selectedNote = useMemo(
-    () => notes.find((note) => note.id === selectedNoteId),
-    [notes, selectedNoteId]
+  const selectedGroup = useMemo(
+    () => dayGroups.find((group) => group.dayKey === selectedDay),
+    [dayGroups, selectedDay]
   )
 
   function generateDraft() {
-    if (!selectedNoteId) return
+    if (!selectedDay) return
 
     setError("")
     setDraft("")
@@ -59,7 +79,7 @@ export function PublishClient({
       const response = await fetch("/api/publish-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ noteId: selectedNoteId, format: formatType }),
+        body: JSON.stringify({ date: selectedDay, format: formatType }),
       })
       const data = (await response.json()) as {
         draft?: string
@@ -124,7 +144,7 @@ export function PublishClient({
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">Notes</h2>
+              <h2 className="text-base font-semibold">Daily notes</h2>
               <div className="inline-flex rounded-lg bg-muted p-1">
                 {(["x-thread", "medium"] as const).map((format) => (
                   <button
@@ -145,38 +165,59 @@ export function PublishClient({
             </div>
 
             <div className="space-y-2">
-              {notes.map((note) => (
+              {dayGroups.map((group) => (
                 <button
-                  key={note.id}
+                  key={group.dayKey}
                   type="button"
-                  onClick={() => setSelectedNoteId(note.id)}
+                  onClick={() => setSelectedDay(group.dayKey)}
                   className="block w-full text-left"
                 >
                   <Card
                     className={cn(
                       "transition-colors",
-                      selectedNoteId === note.id && "ring-2 ring-ring"
+                      selectedDay === group.dayKey && "ring-2 ring-ring"
                     )}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">
-                            {note.title}
+                            {format(new Date(`${group.dayKey}T12:00:00.000Z`), "MMM d, yyyy")}
                           </p>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                            {note.bodyMarkdown.slice(0, 140)}
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {group.notes.length} note{group.notes.length !== 1 ? "s" : ""} for one{" "}
+                            {formatType === "x-thread" ? "reply chain" : "Medium post"}
                           </p>
+                          <div className="mt-2 space-y-1">
+                            {group.notes.slice(0, 4).map((note) => (
+                              <p
+                                key={note.id}
+                                className="truncate text-xs text-muted-foreground"
+                              >
+                                {note.title}
+                              </p>
+                            ))}
+                            {group.notes.length > 4 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{group.notes.length - 4} more
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {note.publishable && (
+                        {group.notes.some((note) => note.publishable) && (
                           <Badge variant="secondary" className="shrink-0 text-xs">
                             Queue
                           </Badge>
                         )}
                       </div>
-                      <p className="mt-1.5 text-xs text-muted-foreground">
-                        {format(new Date(note.createdAt), "MMM d, yyyy")}
-                        {note.roadmapTitle ? ` · ${note.roadmapTitle}` : ""}
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {Array.from(
+                          new Set(
+                            group.notes
+                              .map((note) => note.roadmapTitle)
+                              .filter(Boolean)
+                          )
+                        ).join(" · ")}
                       </p>
                     </CardContent>
                   </Card>
@@ -192,16 +233,18 @@ export function PublishClient({
                   <div>
                     <h2 className="text-base font-semibold">Draft</h2>
                     <p className="text-xs text-muted-foreground">
-                      {selectedNote
-                        ? selectedNote.title
-                        : "Select a note to generate a draft"}
+                      {selectedGroup
+                        ? `${format(new Date(`${selectedGroup.dayKey}T12:00:00.000Z`), "MMM d, yyyy")} · ${
+                            selectedGroup.notes.length
+                          } note${selectedGroup.notes.length !== 1 ? "s" : ""}`
+                        : "Select a day to generate a draft"}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       size="sm"
-                      disabled={!selectedNoteId || isPending}
+                      disabled={!selectedDay || isPending}
                       onClick={generateDraft}
                     >
                       {isPending ? (
@@ -238,7 +281,9 @@ export function PublishClient({
                 />
                 <p className="text-xs text-muted-foreground">
                   {model ? `Generated with ${model}. ` : ""}
-                  Edit freely, then copy into X or Medium.
+                  {formatType === "x-thread"
+                    ? "Post each numbered item as a reply to the previous one."
+                    : "Edit freely, then publish as one Medium post."}
                 </p>
               </CardContent>
             </Card>

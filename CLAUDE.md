@@ -11,5 +11,7 @@ Key reminders:
 - The active LeetCode roadmap is `Advanced Python LeetCode`, not NeetCode 150.
 - Keep learncpp work in the `learncpp.com` roadmap; the seed splits combined math/C++ titles and only keeps light C++ maintenance during the Netflix ramp.
 - The `RecSys Mini-Implementations` roadmap contains hands-on notebook/project blocks for MF, BPR, two-tower retrieval, ranking, offline eval, and synthesis.
+- Keep the RecSys curriculum implementation-heavy and faster than a passive beginner ramp: early MF notebooks, early paper skims, bounded stretch blocks, and project/paper/review items with concrete done conditions.
+- Do not add bare `PROJECT`, `PAPER`, or `REVIEW` seed items without instructions. Add a `description` that states the artifact or reading scope, steps, out-of-scope work, and done condition.
 - Roadmap cards link to `/roadmaps/[id]` detail pages with summaries and units.
 - The publish flow uses `/api/publish-draft` to generate X thread and Medium drafts from saved notes.
