@@ -15,3 +15,4 @@ Key reminders:
 - Do not add bare `PROJECT`, `PAPER`, or `REVIEW` seed items without instructions. Add a `description` that states the artifact or reading scope, steps, out-of-scope work, and done condition.
 - Roadmap cards link to `/roadmaps/[id]` detail pages with summaries and units.
 - The publish flow uses `/api/publish-draft` to generate X thread and Medium drafts from saved notes.
+- Hosted Vercel URLs only change after push/deploy. Seed-backed curriculum text also needs production data updated; code deploys alone do not mutate existing DB rows.

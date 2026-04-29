@@ -212,6 +212,15 @@ https://github.com/aliceyh7/lattice.git
 
 Pushing to `main` may also trigger Vercel Git integration if enabled.
 
+When a user asks why a hosted Vercel URL does not show recent work, first check whether the changes were only made locally. Local edits and local `npm run db:seed` do not affect deployed URLs.
+
+For hosted curriculum/content changes, remember both layers:
+
+- Push the relevant commit to GitHub.
+- Deploy or confirm Vercel has deployed the pushed commit.
+- If the visible content comes from seeded database rows, run the seed against the target production database or otherwise update production data. Deploying code alone will not update existing `RoadmapItem` rows.
+- Do not point users at old deployment URLs such as one-off `lattice-*.vercel.app` previews unless that exact deployment contains the changes. Prefer the latest production URL or stable alias after verification.
+
 ## Coding Notes
 
 - Prefer existing components in `components/ui`.
