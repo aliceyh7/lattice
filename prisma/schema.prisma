@@ -84,6 +84,8 @@ model RoadmapItem {
   type               ItemType       @default(VIDEO)
   url                String?
   estimatedMinutes   Int            @default(45)
+  scheduledStartMinutes Int?
+  scheduledEndMinutes   Int?
   sequenceOrder      Int            @default(0)
   scheduledDate      DateTime?
   status             ItemStatus     @default(TODO)

@@ -31,11 +31,19 @@ import {
   Undo2,
   X,
   AlertTriangle,
+  Pencil,
+  Plus,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useEffect, useState, useTransition } from "react"
-import { updateItemStatus, startSession, updateDailyNote } from "./actions"
+import {
+  createCalendarItem,
+  startSession,
+  updateCalendarItem,
+  updateDailyNote,
+  updateItemStatus,
+} from "./actions"
 
 type ItemWithRelations = {
   id: string
@@ -44,6 +52,8 @@ type ItemWithRelations = {
   type: string
   url: string | null
   estimatedMinutes: number
+  scheduledStartMinutes: number | null
+  scheduledEndMinutes: number | null
   difficulty: string | null
   status: string
   struggled: boolean
@@ -94,6 +104,44 @@ const DOMAIN_ORDER: Domain[] = [
   "OTHER",
 ]
 
+const EDITABLE_DOMAINS: Array<{ value: Domain; label: string }> = DOMAIN_ORDER.map(
+  (domain) => ({ value: domain, label: DOMAIN_META[domain].label })
+)
+
+const EDITABLE_TYPES = [
+  "PROBLEM",
+  "READING",
+  "PAPER",
+  "PROJECT",
+  "REVIEW",
+  "COURSE",
+  "VIDEO",
+] as const
+
+function minutesToTimeInput(minutes: number | null) {
+  if (minutes === null) return ""
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`
+}
+
+function minutesToTimeLabel(minutes: number | null) {
+  if (minutes === null) return null
+  const hours24 = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  const period = hours24 >= 12 ? "PM" : "AM"
+  const hours12 = hours24 % 12 || 12
+  return `${hours12}:${String(mins).padStart(2, "0")} ${period}`
+}
+
+function timeRangeLabel(item: ItemWithRelations) {
+  const start = minutesToTimeLabel(item.scheduledStartMinutes)
+  const end = minutesToTimeLabel(item.scheduledEndMinutes)
+  if (start && end) return `${start} - ${end}`
+  if (start) return start
+  return null
+}
+
 function summarizeNote(markdown: string) {
   const lines = noteToPlainText(markdown)
     .split(/\r?\n/)
@@ -110,9 +158,128 @@ function summarizeNote(markdown: string) {
   return { heading, bullets }
 }
 
-function TaskCard({ item }: { item: ItemWithRelations }) {
+function TaskEditor({
+  item,
+  selectedDate,
+  onCancel,
+}: {
+  item?: ItemWithRelations
+  selectedDate: string
+  onCancel: () => void
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const isNew = !item
+
+  function submit(formData: FormData) {
+    startTransition(async () => {
+      if (item) {
+        await updateCalendarItem(item.id, formData)
+        toast.success("Task updated")
+      } else {
+        await createCalendarItem(selectedDate, formData)
+        toast.success("Task added")
+      }
+      onCancel()
+      router.refresh()
+    })
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <form action={submit} className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+            <input
+              name="title"
+              required
+              defaultValue={item?.title ?? ""}
+              placeholder="Task title"
+              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+            <input
+              name="startTime"
+              type="time"
+              defaultValue={minutesToTimeInput(item?.scheduledStartMinutes ?? null)}
+              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              aria-label="Start time"
+            />
+            <input
+              name="endTime"
+              type="time"
+              defaultValue={minutesToTimeInput(item?.scheduledEndMinutes ?? null)}
+              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              aria-label="End time"
+            />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr]">
+            <select
+              name="domain"
+              defaultValue={item?.roadmap.domain ?? "OTHER"}
+              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {EDITABLE_DOMAINS.map((domain) => (
+                <option key={domain.value} value={domain.value}>
+                  {domain.label}
+                </option>
+              ))}
+            </select>
+            <select
+              name="type"
+              defaultValue={item?.type ?? "PROJECT"}
+              className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {EDITABLE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <input
+            name="url"
+            defaultValue={item?.url ?? ""}
+            placeholder="Optional resource URL"
+            className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          <Textarea
+            name="description"
+            defaultValue={item?.description ?? ""}
+            placeholder="Notes, done condition, or instructions"
+            className="min-h-24 text-sm"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={isPending}
+              onClick={onCancel}
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={isPending}>
+              <Check className="h-3.5 w-3.5" />
+              {isNew ? "Add task" : "Save task"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TaskCard({
+  item,
+  selectedDate,
+}: {
+  item: ItemWithRelations
+  selectedDate: string
+}) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [isEditing, setIsEditing] = useState(false)
   const diffMeta = item.difficulty
     ? DIFFICULTY_META[item.difficulty as keyof typeof DIFFICULTY_META]
     : null
@@ -137,6 +304,18 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
       router.push(`/sessions/${sessionId}`)
     })
   }
+
+  if (isEditing) {
+    return (
+      <TaskEditor
+        item={item}
+        selectedDate={selectedDate}
+        onCancel={() => setIsEditing(false)}
+      />
+    )
+  }
+
+  const timeLabel = timeRangeLabel(item)
 
   return (
     <Card
@@ -175,6 +354,12 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                {timeLabel && (
+                  <span className="flex items-center gap-1 font-medium text-foreground">
+                    <Clock className="h-3 w-3" />
+                    {timeLabel}
+                  </span>
+                )}
                 <ResourceBadge url={item.url} type={item.type} />
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
@@ -208,6 +393,16 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
               <Button
                 size="sm"
                 variant="ghost"
+                className="h-7 w-7 p-0"
+                title="Edit task"
+                disabled={isPending}
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 className="h-7 gap-1 text-xs"
                 title="Reset to todo"
                 disabled={isPending}
@@ -219,6 +414,16 @@ function TaskCard({ item }: { item: ItemWithRelations }) {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                title="Edit task"
+                disabled={isPending}
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -399,6 +604,7 @@ export function TodayClient({
       : 0
 
   const orderedDomains = DOMAIN_ORDER.filter((d) => grouped[d]?.length)
+  const [isAddingTask, setIsAddingTask] = useState(false)
 
   useEffect(() => {
     if (hasExplicitDate) return
@@ -535,6 +741,25 @@ export function TodayClient({
       </div>
 
       {/* Task groups */}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant={isAddingTask ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => setIsAddingTask((value) => !value)}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add task
+        </Button>
+      </div>
+
+      {isAddingTask && (
+        <TaskEditor
+          selectedDate={selectedDate}
+          onCancel={() => setIsAddingTask(false)}
+        />
+      )}
+
       {orderedDomains.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg font-medium">No tasks scheduled for today.</p>
@@ -566,7 +791,11 @@ export function TodayClient({
               </div>
               <div className="space-y-1.5">
                 {items.map((item) => (
-                  <TaskCard key={item.id} item={item} />
+                  <TaskCard
+                    key={item.id}
+                    item={item}
+                    selectedDate={selectedDate}
+                  />
                 ))}
               </div>
             </div>

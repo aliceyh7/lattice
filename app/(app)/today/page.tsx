@@ -57,7 +57,11 @@ async function getItemsForDate(
         select: { id: true },
       },
     },
-    orderBy: [{ roadmap: { domain: "asc" } }, { sequenceOrder: "asc" }],
+    orderBy: [
+      { scheduledStartMinutes: "asc" },
+      { roadmap: { domain: "asc" } },
+      { sequenceOrder: "asc" },
+    ],
   })
 }
 

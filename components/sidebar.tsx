@@ -19,7 +19,7 @@ const nav = [
   { href: "/roadmaps", label: "Roadmaps", icon: Map },
   { href: "/reviews", label: "Reviews", icon: RotateCcw },
   { href: "/papers", label: "Papers", icon: BookOpen },
-  { href: "/leetcode", label: "LeetCode", icon: Code2 },
+  { href: "/leetcode", label: "Deep-ML", icon: Code2 },
   { href: "/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/publish", label: "Publish", icon: Send },
   { href: "/settings", label: "Settings", icon: Settings },

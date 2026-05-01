@@ -8,6 +8,93 @@ import {
 } from "@/lib/local-date"
 import { getUser } from "@/lib/user"
 import { revalidatePath } from "next/cache"
+import type { Domain, ItemType } from "@prisma/client"
+
+const DOMAINS = new Set([
+  "ML_RECSYS",
+  "LEETCODE",
+  "MATH_STATS",
+  "CPP_SYSTEMS",
+  "DISTRIBUTED_TRAINING",
+  "REVIEW",
+  "OTHER",
+])
+
+const ITEM_TYPES = new Set([
+  "VIDEO",
+  "PAPER",
+  "COURSE",
+  "PROBLEM",
+  "PROJECT",
+  "REVIEW",
+  "READING",
+])
+
+const DEFAULT_ROADMAP_BY_DOMAIN: Record<Domain, string> = {
+  ML_RECSYS: "ML / RecSys",
+  LEETCODE: "Deep-ML Practice",
+  MATH_STATS: "Quant Stats / Probability",
+  CPP_SYSTEMS: "C++ / Systems",
+  DISTRIBUTED_TRAINING: "Distributed Training",
+  REVIEW: "Review / Admin",
+  OTHER: "Calendar Blocks",
+}
+
+function readString(formData: FormData, key: string) {
+  const value = formData.get(key)
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function parseTimeToMinutes(value: string) {
+  if (!value) return null
+  const match = value.match(/^(\d{1,2}):(\d{2})$/)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null
+  return hours * 60 + minutes
+}
+
+function minutesBetween(start: number | null, end: number | null) {
+  if (start === null || end === null || end <= start) return 45
+  return end - start
+}
+
+function parseDomain(value: string): Domain {
+  return DOMAINS.has(value) ? (value as Domain) : "OTHER"
+}
+
+function parseItemType(value: string): ItemType {
+  return ITEM_TYPES.has(value) ? (value as ItemType) : "PROJECT"
+}
+
+async function getOrCreateRoadmap(userId: string, domain: Domain) {
+  const title = DEFAULT_ROADMAP_BY_DOMAIN[domain]
+  const existing = await db.roadmap.findFirst({
+    where: { userId, title },
+  })
+  if (existing) {
+    if (existing.status !== "ACTIVE") {
+      return db.roadmap.update({
+        where: { id: existing.id },
+        data: { status: "ACTIVE" },
+      })
+    }
+    return existing
+  }
+
+  return db.roadmap.create({
+    data: {
+      userId,
+      title,
+      domain,
+      description: "Editable calendar tasks for the current curriculum.",
+      targetRole: domain === "LEETCODE" ? "Deep-ML / ML interviews" : undefined,
+      status: "ACTIVE",
+      priority: 100,
+    },
+  })
+}
 
 export async function updateItemStatus(
   itemId: string,
@@ -90,4 +177,80 @@ export async function updateDailyNote(noteId: string, bodyMarkdown: string) {
 
   revalidatePath("/today")
   revalidatePath("/publish")
+}
+
+export async function createCalendarItem(
+  selectedDate: string,
+  formData: FormData
+) {
+  const user = await getUser()
+  const title = readString(formData, "title")
+  if (!title) throw new Error("Title is required")
+
+  const start = parseTimeToMinutes(readString(formData, "startTime"))
+  const end = parseTimeToMinutes(readString(formData, "endTime"))
+  const domain = parseDomain(readString(formData, "domain"))
+  const type = parseItemType(readString(formData, "type"))
+  const roadmap = await getOrCreateRoadmap(user.id, domain)
+  const scheduledDate = getUtcStartOfLocalDate(selectedDate, user.timezone)
+  const sequenceOrder = start ?? 9999
+
+  await db.roadmapItem.create({
+    data: {
+      roadmapId: roadmap.id,
+      title,
+      description: readString(formData, "description") || undefined,
+      url: readString(formData, "url") || undefined,
+      type,
+      estimatedMinutes: minutesBetween(start, end),
+      scheduledStartMinutes: start,
+      scheduledEndMinutes: end,
+      scheduledDate,
+      sequenceOrder,
+    },
+  })
+
+  revalidatePath("/today")
+  revalidatePath(`/today?date=${selectedDate}`)
+}
+
+export async function updateCalendarItem(itemId: string, formData: FormData) {
+  const user = await getUser()
+  const item = await db.roadmapItem.findFirst({
+    where: { id: itemId, roadmap: { userId: user.id } },
+    include: { roadmap: true },
+  })
+  if (!item) throw new Error("Item not found")
+
+  const title = readString(formData, "title")
+  if (!title) throw new Error("Title is required")
+
+  const start = parseTimeToMinutes(readString(formData, "startTime"))
+  const end = parseTimeToMinutes(readString(formData, "endTime"))
+  const domain = parseDomain(readString(formData, "domain"))
+  const type = parseItemType(readString(formData, "type"))
+  const roadmap =
+    item.roadmap.domain === domain ? item.roadmap : await getOrCreateRoadmap(user.id, domain)
+
+  await db.roadmapItem.update({
+    where: { id: itemId },
+    data: {
+      roadmapId: roadmap.id,
+      title,
+      description: readString(formData, "description") || null,
+      url: readString(formData, "url") || null,
+      type,
+      estimatedMinutes: minutesBetween(start, end),
+      scheduledStartMinutes: start,
+      scheduledEndMinutes: end,
+      sequenceOrder: start ?? item.sequenceOrder,
+    },
+  })
+
+  revalidatePath("/today")
+  if (item.scheduledDate) {
+    revalidatePath(
+      `/today?date=${getDateStringInTimeZone(item.scheduledDate, user.timezone)}`
+    )
+  }
 }

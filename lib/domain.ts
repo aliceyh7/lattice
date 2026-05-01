@@ -10,7 +10,7 @@ export const DOMAIN_META: Record<
     bg: "bg-violet-100 dark:bg-violet-900/30",
   },
   LEETCODE: {
-    label: "LeetCode",
+    label: "Deep-ML",
     color: "text-emerald-700 dark:text-emerald-300",
     bg: "bg-emerald-100 dark:bg-emerald-900/30",
   },
