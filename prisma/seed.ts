@@ -1,4 +1,10 @@
-import { PrismaClient, Domain, ItemType, Difficulty } from "@prisma/client"
+import {
+  PrismaClient,
+  Domain,
+  ItemStatus,
+  ItemType,
+  Difficulty,
+} from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
 import "dotenv/config"
 
@@ -19,6 +25,7 @@ type ScheduleItem = {
   url?: string
   description?: string
   difficulty?: Difficulty
+  status?: ItemStatus
 }
 
 type DayPlan = {
@@ -27,6 +34,50 @@ type DayPlan = {
 }
 
 const DEEP_ML_URL = "https://www.deep-ml.com/playlist/qvTWj08Ak0vsl7ZZp6Xz"
+
+const readingQueue = [
+  "Netflix architecture/recsys blog",
+  "RecSys foundations",
+  "Recommendations ranking paper",
+  "Workshop paper",
+  "Netflix experimentation blog",
+  "Candidate generation paper",
+  "Retrieval/ranking paper",
+  "Netflix engineering or experimentation post",
+  "RecSys paper on ranking or retrieval",
+  "Workshop paper on recommender systems",
+  "Related recommendations ML paper",
+  "Netflix personalization or experimentation post",
+  "RecSys paper on evaluation",
+  "Workshop paper or invited talk paper",
+  "Netflix ML systems or personalization blog",
+  "RecSys paper on learning-to-rank",
+  "Workshop paper on recommendation modeling",
+  "RecSys paper with temporal dynamics",
+  "Workshop paper on temporal recommendation",
+]
+
+const quantQueue = [
+  "Probability basics",
+  "Conditional probability and Bayes",
+  "Random variables",
+  "Expectation and variance",
+  "Common distributions",
+  "Concentration, LLN, and CLT",
+  "Weekly mixed drill",
+  "Point estimation and sampling error",
+  "Confidence intervals",
+  "Hypothesis testing",
+  "P-values, power, and sample size",
+  "A/B testing design",
+  "Multiple testing and false discovery",
+  "Linear regression assumptions",
+  "Least squares and normal equations",
+  "Logistic regression and odds",
+  "Autocorrelation",
+  "Stationarity",
+  "Mixed probability/statistics repair drill",
+]
 
 function minutes(time: string | undefined) {
   if (!time) return null
@@ -51,12 +102,19 @@ function item(
   end: string,
   description?: string,
   url?: string,
-  difficulty?: Difficulty
+  difficulty?: Difficulty,
+  status?: ItemStatus
 ): ScheduleItem {
-  return { title, domain, type, start, end, description, url, difficulty }
+  return { title, domain, type, start, end, description, url, difficulty, status }
 }
 
-function deepMl(range: string, start: string, end: string, note?: string) {
+function deepMl(
+  range: string,
+  start: string,
+  end: string,
+  note?: string,
+  status?: ItemStatus
+) {
   return item(
     `Deep-ML ${range}`,
     "LEETCODE",
@@ -69,30 +127,45 @@ function deepMl(range: string, start: string, end: string, note?: string) {
       note ?? "Track each problem as Solved, Learn-assisted, Solution-assisted, or Redo.",
     ].join(" "),
     DEEP_ML_URL,
-    "MEDIUM"
+    "MEDIUM",
+    status
   )
 }
 
-function fullDay(date: string, range: string, reading: string, quant: string): DayPlan {
+function normalDay(
+  date: string,
+  range: string,
+  reading: string,
+  quant: string,
+  extras: ScheduleItem[] = []
+): DayPlan {
   return {
     date,
     items: [
-      deepMl(range, "09:00", "15:30"),
-      item(reading, "ML_RECSYS", "READING", "15:45", "17:15", "Read actively: write three bullets and one interview takeaway."),
-      item(quant, "MATH_STATS", "REVIEW", "17:30", "19:00", "Do focused quant stats/probability drills and record misses."),
-      item("Daily review", "REVIEW", "REVIEW", "19:00", "19:30", "Log Deep-ML misses, formulas, implementation patterns, and next-day carryovers."),
+      deepMl(range, "10:00", "13:00", "Reduced pace: aim for clean solutions, not volume."),
+      item(reading, "ML_RECSYS", "READING", "14:00", "14:45", "One short annotated read: three bullets and one interview takeaway."),
+      item(quant, "MATH_STATS", "REVIEW", "15:00", "15:45", "Short focused quant drill; log only the misses."),
+      ...extras,
+      item("Daily review", "REVIEW", "REVIEW", "16:00", "16:15", "Capture misses and next-day carryovers."),
     ],
   }
 }
 
-function halfDay(date: string, range: string, reading: string, quant: string): DayPlan {
+function lightDay(
+  date: string,
+  range: string,
+  reading: string,
+  quant: string,
+  extras: ScheduleItem[] = []
+): DayPlan {
   return {
     date,
     items: [
-      deepMl(range, "09:30", "12:00", "Half-load day: complete only this 5-problem set."),
-      item(reading, "ML_RECSYS", "READING", "13:00", "13:45", "Short annotated read; three bullets are enough."),
-      item(quant, "MATH_STATS", "REVIEW", "14:00", "14:45", "Short focused drill; record misses only."),
-      item("Daily review", "REVIEW", "REVIEW", "15:15", "15:30", "Capture misses and next-day carryovers."),
+      deepMl(range, "10:00", "11:45", "Light day: complete this smaller problem set only."),
+      item(reading, "ML_RECSYS", "READING", "13:00", "13:30", "Short skim or blog read; notes can be minimal."),
+      item(quant, "MATH_STATS", "REVIEW", "13:45", "14:15", "Short drill block."),
+      ...extras,
+      item("Daily review", "REVIEW", "REVIEW", "14:30", "14:45", "Log carryovers."),
     ],
   }
 }
@@ -103,94 +176,126 @@ function travelDay(date: string, includeCodestar = false): DayPlan {
     items: [
       item("Travel block", "OTHER", "REVIEW", "09:00", "17:00", "No scheduled curriculum work."),
       ...(includeCodestar
-        ? [item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; keep this time occupied.")]
+        ? [
+            item(
+              "Codestar team meeting",
+              "OTHER",
+              "PROJECT",
+              "10:00",
+              "16:00",
+              "Side project meeting; keep this time occupied."
+            ),
+          ]
         : []),
     ],
   }
 }
 
 const schedule: DayPlan[] = [
-  fullDay("2026-04-30", "005-014", "Netflix architecture/recsys blog", "Probability basics"),
-  fullDay("2026-05-01", "015-024", "RecSys foundations", "Conditional probability and Bayes"),
-  halfDay("2026-05-02", "025-029", "Recommendations ranking paper", "Random variables"),
+  {
+    date: "2026-04-30",
+    items: [
+      deepMl(
+        "005",
+        "10:00",
+        "11:00",
+        "Completed on April 30. The rest of the original April 30 workload was moved downstream.",
+        "COMPLETED"
+      ),
+    ],
+  },
+  normalDay("2026-05-01", "006-010", readingQueue[0], quantQueue[0]),
+  lightDay("2026-05-02", "011-013", readingQueue[1], quantQueue[1]),
   {
     date: "2026-05-03",
     items: [
-      deepMl("030-034", "07:30", "09:30", "Early block before Codestar."),
+      deepMl("014-016", "08:00", "09:30", "Light Sunday block before Codestar."),
       item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      deepMl("035-039", "16:30", "19:00", "Finish the Sunday Deep-ML set after Codestar."),
-      item("Workshop paper", "ML_RECSYS", "PAPER", "19:00", "20:00", "Short active read with three bullets."),
-      item("Expectation and variance", "MATH_STATS", "REVIEW", "20:00", "21:00", "Quant drill block."),
-      item("Review/admin", "REVIEW", "REVIEW", "21:00", "21:30", "Log misses and prepare Monday."),
+      item(readingQueue[2], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
+      item(quantQueue[2], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
+      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
     ],
   },
-  {
-    date: "2026-05-04",
-    items: [
-      item("Recruiter admin", "REVIEW", "REVIEW", "08:30", "09:00", "Reply to new messages and schedule calls."),
-      deepMl("040-049", "09:00", "14:45"),
-      item("Film UChicago 1-minute video", "OTHER", "PROJECT", "15:00", "16:00", "Record the final take and save it."),
-      item("Netflix experimentation blog", "ML_RECSYS", "READING", "16:15", "17:30", "Read actively and write one interview takeaway."),
-      item("Common distributions", "MATH_STATS", "REVIEW", "17:45", "19:15", "Quant drill block."),
-      item("Daily review", "REVIEW", "REVIEW", "19:15", "19:45", "List distribution assumptions and traps."),
-    ],
-  },
-  fullDay("2026-05-05", "050-059", "Candidate generation paper", "Concentration, LLN, and CLT"),
-  fullDay("2026-05-06", "060-069", "Retrieval/ranking paper", "Weekly mixed drill"),
+  normalDay("2026-05-04", "017-021", readingQueue[3], quantQueue[3], [
+    item("Film UChicago 1-minute video", "OTHER", "PROJECT", "13:30", "14:30", "Record the final take and save it."),
+    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+  ]),
+  normalDay("2026-05-05", "022-026", readingQueue[4], quantQueue[4]),
+  normalDay("2026-05-06", "027-031", readingQueue[5], quantQueue[5]),
   travelDay("2026-05-07"),
   travelDay("2026-05-08"),
   travelDay("2026-05-09"),
   travelDay("2026-05-10", true),
   travelDay("2026-05-11"),
-  fullDay("2026-05-12", "070-079", "Netflix engineering or experimentation post", "Point estimation and sampling error"),
-  halfDay("2026-05-13", "080-084", "RecSys paper on ranking or retrieval", "Confidence intervals"),
-  halfDay("2026-05-14", "085-089", "Workshop paper on recommender systems", "Hypothesis testing"),
-  halfDay("2026-05-15", "090-094", "Related recommendations ML paper", "P-values, power, and sample size"),
-  halfDay("2026-05-16", "095-099", "Netflix personalization or experimentation post", "A/B testing design"),
+  normalDay("2026-05-12", "032-036", readingQueue[6], quantQueue[6]),
+  lightDay("2026-05-13", "037-039", readingQueue[7], quantQueue[7]),
+  lightDay("2026-05-14", "040-042", readingQueue[8], quantQueue[8]),
+  lightDay("2026-05-15", "043-045", readingQueue[9], quantQueue[9]),
+  lightDay("2026-05-16", "046-048", readingQueue[10], quantQueue[10]),
   {
     date: "2026-05-17",
     items: [
-      deepMl("100-101", "08:30", "09:30", "Early block before Codestar."),
+      deepMl("049-051", "08:00", "09:30", "Light Sunday block before Codestar."),
       item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      deepMl("102-104", "16:30", "18:00", "Finish the half-load Deep-ML set."),
-      item("RecSys paper on evaluation", "ML_RECSYS", "PAPER", "18:00", "18:45", "Short annotated read."),
-      item("Multiple testing and false discovery", "MATH_STATS", "REVIEW", "18:45", "19:30", "Short quant drill."),
-      item("Review/admin", "REVIEW", "REVIEW", "19:30", "20:00", "Urgent replies and mistake log."),
+      item(readingQueue[11], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
+      item(quantQueue[11], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
+      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
     ],
   },
-  halfDay("2026-05-18", "105-109", "Workshop paper or invited talk paper", "Weekly mixed estimation/testing drill"),
-  halfDay("2026-05-19", "110-114", "Netflix ML systems or personalization blog", "Linear regression assumptions"),
-  halfDay("2026-05-20", "115-119", "RecSys paper on learning-to-rank", "Least squares and normal equations"),
-  halfDay("2026-05-21", "120-124", "Workshop paper on recommendation modeling", "Logistic regression and odds"),
-  halfDay("2026-05-22", "125-129", "RecSys paper with temporal dynamics", "Autocorrelation"),
-  halfDay("2026-05-23", "130-134", "Workshop paper on temporal recommendation", "Stationarity"),
+  lightDay("2026-05-18", "052-054", readingQueue[12], quantQueue[12]),
+  lightDay("2026-05-19", "055-057", readingQueue[13], quantQueue[13]),
+  lightDay("2026-05-20", "058-060", readingQueue[14], quantQueue[14]),
+  lightDay("2026-05-21", "061-063", readingQueue[15], quantQueue[15]),
+  lightDay("2026-05-22", "064-066", readingQueue[16], quantQueue[16]),
+  lightDay("2026-05-23", "067-069", readingQueue[17], quantQueue[17]),
   {
     date: "2026-05-24",
     items: [
-      deepMl("135-136", "08:30", "09:30", "Finish the 136-problem playlist."),
+      deepMl("070-072", "08:00", "09:30", "Light Sunday block before Codestar."),
       item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item("Final synthesis read", "ML_RECSYS", "READING", "16:30", "17:15", "Choose the highest-signal Netflix, RecSys, workshop, or recommendations ML read."),
-      item("Mixed probability/statistics repair drill", "MATH_STATS", "REVIEW", "17:15", "18:00", "Patch the weakest quant topics from the sprint."),
-      item("Recruiter admin", "REVIEW", "REVIEW", "18:00", "18:30", "Close open recruiter loops and set next prep schedule."),
-      item("Final review", "REVIEW", "REVIEW", "18:30", "19:30", "Build redo list, top formulas, and next 1-week maintenance plan."),
+      item(readingQueue[18], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
+      item(quantQueue[18], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
+      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
     ],
   },
+  normalDay("2026-05-25", "073-077", readingQueue[0], quantQueue[0]),
+  normalDay("2026-05-26", "078-082", readingQueue[1], quantQueue[1]),
+  normalDay("2026-05-27", "083-087", readingQueue[2], quantQueue[2]),
+  normalDay("2026-05-28", "088-092", readingQueue[3], quantQueue[3]),
+  normalDay("2026-05-29", "093-097", readingQueue[4], quantQueue[4], [
+    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+  ]),
+  normalDay("2026-05-30", "098-102", readingQueue[5], quantQueue[5]),
   {
-    date: "2026-05-26",
+    date: "2026-05-31",
     items: [
-      item("Recruiter admin", "REVIEW", "REVIEW", "10:00", "10:30", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+      deepMl("103-105", "08:00", "09:30", "Light Sunday block before Codestar."),
+      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+      item(readingQueue[6], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
+      item(quantQueue[6], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
+      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
     ],
   },
+  normalDay("2026-06-01", "106-110", readingQueue[7], quantQueue[7]),
+  normalDay("2026-06-02", "111-115", readingQueue[8], quantQueue[8]),
+  normalDay("2026-06-03", "116-120", readingQueue[9], quantQueue[9]),
+  normalDay("2026-06-04", "121-125", readingQueue[10], quantQueue[10]),
+  normalDay("2026-06-05", "126-130", readingQueue[11], quantQueue[11], [
+    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+  ]),
+  normalDay("2026-06-06", "131-135", readingQueue[12], quantQueue[12]),
   {
-    date: "2026-05-29",
+    date: "2026-06-07",
     items: [
-      item("Recruiter admin", "REVIEW", "REVIEW", "10:00", "10:30", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+      deepMl("136", "08:30", "09:00", "Finish the 136-problem playlist."),
+      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+      item("Final review", "REVIEW", "REVIEW", "16:30", "17:30", "Build redo list, top formulas, and next 1-week maintenance plan."),
     ],
   },
 ]
 
 const ROADMAPS = [
-  { title: "Deep-ML Practice", domain: "LEETCODE" as Domain, description: "136-problem Deep-ML playlist completion sprint", priority: 0 },
+  { title: "Deep-ML Practice", domain: "LEETCODE" as Domain, description: "136-problem Deep-ML playlist completion sprint at a sustainable pace", priority: 0 },
   { title: "ML / RecSys Reading", domain: "ML_RECSYS" as Domain, description: "Netflix blog posts, RecSys papers, workshop papers, and recommendations ML reading", priority: 1 },
   { title: "Quant Stats / Probability", domain: "MATH_STATS" as Domain, description: "Probability, statistics, experiments, regression, and quant research interview drills", priority: 2 },
   { title: "Review / Admin", domain: "REVIEW" as Domain, description: "Recruiter email, interview scheduling, daily review, and retrospectives", priority: 3 },
@@ -204,6 +309,45 @@ function pickRoadmapTitle(domain: Domain) {
   if (domain === "REVIEW") return "Review / Admin"
   return "Calendar Blocks"
 }
+
+const SEEDED_TITLE_PATTERNS = [
+  /^Deep-ML (?:\d{3}|\d{3}-\d{3})$/,
+  /^Netflix /,
+  /^RecSys /,
+  /^Recommendations /,
+  /^Workshop /,
+  /^Related recommendations /,
+  /^Candidate generation /,
+  /^Retrieval\/ranking /,
+  /^Final synthesis read$/,
+  /^Probability /,
+  /^Conditional probability /,
+  /^Random variables$/,
+  /^Expectation /,
+  /^Common distributions$/,
+  /^Concentration, /,
+  /^Weekly mixed /,
+  /^Point estimation /,
+  /^Confidence intervals$/,
+  /^Hypothesis testing$/,
+  /^P-values, /,
+  /^A\/B testing /,
+  /^Multiple testing /,
+  /^Linear regression /,
+  /^Least squares /,
+  /^Logistic regression /,
+  /^Autocorrelation$/,
+  /^Stationarity$/,
+  /^Mixed probability\/statistics /,
+  /^Daily review$/,
+  /^Review\/admin$/,
+  /^Final review$/,
+  /^Recruiter admin$/,
+  /^Urgent recruiter check$/,
+  /^Travel block$/,
+  /^Codestar team meeting$/,
+  /^Film UChicago /,
+]
 
 async function main() {
   console.log("Seeding Lattice Deep-ML calendar…")
@@ -238,14 +382,26 @@ async function main() {
   const activeRoadmapIds = Object.values(roadmapMap)
   const scheduledDates = schedule.map((day) => new Date(`${day.date}T09:00:00.000Z`))
 
-  await db.roadmapItem.deleteMany({
+  const existingSeededItems = await db.roadmapItem.findMany({
     where: {
       roadmapId: { in: activeRoadmapIds },
       scheduledDate: { in: scheduledDates },
       sessions: { none: {} },
-      title: { in: ["Recruiter admin", "Urgent recruiter check"] },
     },
+    select: { id: true, title: true },
   })
+
+  const seededItemIds = existingSeededItems
+    .filter((existing) =>
+      SEEDED_TITLE_PATTERNS.some((pattern) => pattern.test(existing.title))
+    )
+    .map((existing) => existing.id)
+
+  if (seededItemIds.length > 0) {
+    await db.roadmapItem.deleteMany({
+      where: { id: { in: seededItemIds } },
+    })
+  }
 
   let created = 0
   for (const day of schedule) {
@@ -272,6 +428,7 @@ async function main() {
         scheduledStartMinutes: start,
         scheduledEndMinutes: end,
         difficulty: scheduleItem.difficulty,
+        status: scheduleItem.status ?? "TODO",
         scheduledDate,
         sequenceOrder: start ?? index,
       }
