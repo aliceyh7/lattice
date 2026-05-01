@@ -254,3 +254,30 @@ export async function updateCalendarItem(itemId: string, formData: FormData) {
     )
   }
 }
+
+export async function deleteCalendarItem(itemId: string) {
+  const user = await getUser()
+  const item = await db.roadmapItem.findFirst({
+    where: { id: itemId, roadmap: { userId: user.id } },
+  })
+  if (!item) throw new Error("Item not found")
+
+  await db.$transaction([
+    db.studySession.updateMany({
+      where: { roadmapItemId: itemId },
+      data: { roadmapItemId: null },
+    }),
+    db.quizCard.updateMany({
+      where: { roadmapItemId: itemId },
+      data: { roadmapItemId: null },
+    }),
+    db.roadmapItem.delete({ where: { id: itemId } }),
+  ])
+
+  revalidatePath("/today")
+  if (item.scheduledDate) {
+    revalidatePath(
+      `/today?date=${getDateStringInTimeZone(item.scheduledDate, user.timezone)}`
+    )
+  }
+}

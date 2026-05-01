@@ -33,12 +33,14 @@ import {
   AlertTriangle,
   Pencil,
   Plus,
+  Trash2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useEffect, useState, useTransition } from "react"
 import {
   createCalendarItem,
+  deleteCalendarItem,
   startSession,
   updateCalendarItem,
   updateDailyNote,
@@ -305,6 +307,17 @@ function TaskCard({
     })
   }
 
+  function handleDelete() {
+    const confirmed = window.confirm(`Delete "${item.title}"?`)
+    if (!confirmed) return
+
+    startTransition(async () => {
+      await deleteCalendarItem(item.id)
+      router.refresh()
+      toast.success("Task deleted")
+    })
+  }
+
   if (isEditing) {
     return (
       <TaskEditor
@@ -403,6 +416,16 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                title="Delete task"
+                disabled={isPending}
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 className="h-7 gap-1 text-xs"
                 title="Reset to todo"
                 disabled={isPending}
@@ -423,6 +446,16 @@ function TaskCard({
                 onClick={() => setIsEditing(true)}
               >
                 <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                title="Delete task"
+                disabled={isPending}
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 size="sm"

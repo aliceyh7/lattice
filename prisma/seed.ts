@@ -77,7 +77,6 @@ function fullDay(date: string, range: string, reading: string, quant: string): D
   return {
     date,
     items: [
-      item("Recruiter admin", "REVIEW", "REVIEW", "08:30", "09:00", "Reply to recruiter emails, confirm availability, and update interview next steps."),
       deepMl(range, "09:00", "15:30"),
       item(reading, "ML_RECSYS", "READING", "15:45", "17:15", "Read actively: write three bullets and one interview takeaway."),
       item(quant, "MATH_STATS", "REVIEW", "17:30", "19:00", "Do focused quant stats/probability drills and record misses."),
@@ -93,7 +92,6 @@ function halfDay(date: string, range: string, reading: string, quant: string): D
       deepMl(range, "09:30", "12:00", "Half-load day: complete only this 5-problem set."),
       item(reading, "ML_RECSYS", "READING", "13:00", "13:45", "Short annotated read; three bullets are enough."),
       item(quant, "MATH_STATS", "REVIEW", "14:00", "14:45", "Short focused drill; record misses only."),
-      item("Recruiter admin", "REVIEW", "REVIEW", "15:00", "15:15", "Answer urgent scheduling threads only."),
       item("Daily review", "REVIEW", "REVIEW", "15:15", "15:30", "Capture misses and next-day carryovers."),
     ],
   }
@@ -107,7 +105,6 @@ function travelDay(date: string, includeCodestar = false): DayPlan {
       ...(includeCodestar
         ? [item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; keep this time occupied.")]
         : []),
-      item("Urgent recruiter check", "REVIEW", "REVIEW", "18:00", "18:15", "Only answer time-sensitive messages."),
     ],
   }
 }
@@ -178,6 +175,18 @@ const schedule: DayPlan[] = [
       item("Final review", "REVIEW", "REVIEW", "18:30", "19:30", "Build redo list, top formulas, and next 1-week maintenance plan."),
     ],
   },
+  {
+    date: "2026-05-26",
+    items: [
+      item("Recruiter admin", "REVIEW", "REVIEW", "10:00", "10:30", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+    ],
+  },
+  {
+    date: "2026-05-29",
+    items: [
+      item("Recruiter admin", "REVIEW", "REVIEW", "10:00", "10:30", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+    ],
+  },
 ]
 
 const ROADMAPS = [
@@ -227,15 +236,14 @@ async function main() {
   }
 
   const activeRoadmapIds = Object.values(roadmapMap)
-  const scheduledTitles = schedule.flatMap((day) =>
-    day.items.map((scheduleItem) => scheduleItem.title)
-  )
+  const scheduledDates = schedule.map((day) => new Date(`${day.date}T09:00:00.000Z`))
 
   await db.roadmapItem.deleteMany({
     where: {
       roadmapId: { in: activeRoadmapIds },
-      title: { notIn: scheduledTitles },
+      scheduledDate: { in: scheduledDates },
       sessions: { none: {} },
+      title: { in: ["Recruiter admin", "Urgent recruiter check"] },
     },
   })
 
