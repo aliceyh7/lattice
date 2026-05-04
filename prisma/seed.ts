@@ -26,6 +26,7 @@ type ScheduleItem = {
   description?: string
   difficulty?: Difficulty
   status?: ItemStatus
+  estimatedMinutes?: number
 }
 
 type DayPlan = {
@@ -34,6 +35,8 @@ type DayPlan = {
 }
 
 const DEEP_ML_URL = "https://www.deep-ml.com/playlist/qvTWj08Ak0vsl7ZZp6Xz"
+const DEEP_MIND_INTERVIEW_PREP_URL =
+  "https://www.deep-ml.com/collections/DeepMind%20Interview%20Prep"
 
 const readingQueue = [
   "Netflix architecture/recsys blog",
@@ -88,9 +91,11 @@ function minutes(time: string | undefined) {
 function duration(start: string | undefined, end: string | undefined) {
   const startMinutes = minutes(start)
   const endMinutes = minutes(end)
-  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+  if (startMinutes === null || endMinutes === null) {
     return 45
   }
+  if (endMinutes === startMinutes) return 0
+  if (endMinutes < startMinutes) return 45
   return endMinutes - startMinutes
 }
 
@@ -103,9 +108,41 @@ function item(
   description?: string,
   url?: string,
   difficulty?: Difficulty,
-  status?: ItemStatus
+  status?: ItemStatus,
+  estimatedMinutes?: number
 ): ScheduleItem {
-  return { title, domain, type, start, end, description, url, difficulty, status }
+  return {
+    title,
+    domain,
+    type,
+    start,
+    end,
+    description,
+    url,
+    difficulty,
+    status,
+    estimatedMinutes,
+  }
+}
+
+function calendarBlock(
+  title: string,
+  start: string,
+  end: string,
+  description: string
+): ScheduleItem {
+  return item(
+    title,
+    "OTHER",
+    "PROJECT",
+    start,
+    end,
+    description,
+    undefined,
+    undefined,
+    undefined,
+    0
+  )
 }
 
 function deepMl(
@@ -123,7 +160,7 @@ function deepMl(
     end,
     [
       "Work through the listed Deep-ML playlist positions in order.",
-      "First pass without solutions; read the learn section after 20 minutes stuck; inspect solution after 35 minutes, then reimplement from memory.",
+      "Cap each problem at 30 minutes: first pass without solutions; read the learn section after 20 minutes stuck; inspect solution after 30 minutes, then reimplement from memory.",
       note ?? "Track each problem as Solved, Learn-assisted, Solution-assisted, or Redo.",
     ].join(" "),
     DEEP_ML_URL,
@@ -132,40 +169,61 @@ function deepMl(
   )
 }
 
-function normalDay(
-  date: string,
-  range: string,
-  reading: string,
-  quant: string,
-  extras: ScheduleItem[] = []
-): DayPlan {
-  return {
-    date,
-    items: [
-      deepMl(range, "10:00", "13:00", "Reduced pace: aim for clean solutions, not volume."),
-      item(reading, "ML_RECSYS", "READING", "14:00", "14:45", "One short annotated read: three bullets and one interview takeaway."),
-      item(quant, "MATH_STATS", "REVIEW", "15:00", "15:45", "Short focused quant drill; log only the misses."),
-      ...extras,
-      item("Daily review", "REVIEW", "REVIEW", "16:00", "16:15", "Capture misses and next-day carryovers."),
-    ],
+function supportBlock(index: number, start: string, end: string): ScheduleItem {
+  const rotation = index % 3
+  if (rotation === 0) {
+    return item(
+      quantQueue[index % quantQueue.length],
+      "MATH_STATS",
+      "REVIEW",
+      start,
+      end,
+      "One focused drill set only; log misses and formulas that need review."
+    )
   }
+  if (rotation === 1) {
+    return item(
+      readingQueue[index % readingQueue.length],
+      "ML_RECSYS",
+      "READING",
+      start,
+      end,
+      "One bounded annotated read: three bullets and one interview takeaway."
+    )
+  }
+  return item(
+    "DeepMind Interview Prep collection",
+    "LEETCODE",
+    "PROBLEM",
+    start,
+    end,
+    "Use this as the support block, not extra workload. Pick one relevant collection problem or prompt, work for the timebox, and capture any redo-worthy gaps.",
+    DEEP_MIND_INTERVIEW_PREP_URL,
+    "MEDIUM"
+  )
 }
 
-function lightDay(
+function studyDay(
   date: string,
   range: string,
-  reading: string,
-  quant: string,
+  supportIndex: number,
   extras: ScheduleItem[] = []
 ): DayPlan {
+  const hasCodestar = extras.some((extra) => extra.title === "Codestar team meeting")
+  const deepStart = hasCodestar ? "08:00" : "10:00"
+  const deepEnd = hasCodestar ? "09:30" : "11:30"
+  const supportStart = hasCodestar ? "16:30" : "11:45"
+  const supportEnd = hasCodestar ? "17:15" : "12:30"
+  const reviewStart = hasCodestar ? "17:30" : "12:45"
+  const reviewEnd = hasCodestar ? "17:45" : "13:00"
+
   return {
     date,
     items: [
-      deepMl(range, "10:00", "11:45", "Light day: complete this smaller problem set only."),
-      item(reading, "ML_RECSYS", "READING", "13:00", "13:30", "Short skim or blog read; notes can be minimal."),
-      item(quant, "MATH_STATS", "REVIEW", "13:45", "14:15", "Short drill block."),
+      deepMl(range, deepStart, deepEnd, "Sustainable pace: three problems, 30 minutes each."),
+      supportBlock(supportIndex, supportStart, supportEnd),
       ...extras,
-      item("Daily review", "REVIEW", "REVIEW", "14:30", "14:45", "Log carryovers."),
+      item("Daily review", "REVIEW", "REVIEW", reviewStart, reviewEnd, "Mark problem statuses, capture redo items, and note next-day carryovers."),
     ],
   }
 }
@@ -174,13 +232,11 @@ function travelDay(date: string, includeCodestar = false): DayPlan {
   return {
     date,
     items: [
-      item("Travel block", "OTHER", "REVIEW", "09:00", "17:00", "No scheduled curriculum work."),
+      item("Travel block", "OTHER", "REVIEW", "09:00", "09:00", "No scheduled curriculum work."),
       ...(includeCodestar
         ? [
-            item(
+            calendarBlock(
               "Codestar team meeting",
-              "OTHER",
-              "PROJECT",
               "10:00",
               "16:00",
               "Side project meeting; keep this time occupied."
@@ -191,108 +247,119 @@ function travelDay(date: string, includeCodestar = false): DayPlan {
   }
 }
 
-const schedule: DayPlan[] = [
-  {
-    date: "2026-04-30",
+const TRAVEL_DATES = new Set([
+  "2026-05-07",
+  "2026-05-08",
+  "2026-05-09",
+  "2026-05-10",
+  "2026-05-11",
+])
+
+const FIXED_BLOCKS: Record<string, ScheduleItem[]> = {
+  "2026-05-17": [
+    calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+  ],
+  "2026-05-24": [
+    calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+  ],
+  "2026-05-29": [
+    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
+  ],
+  "2026-05-31": [
+    calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+  ],
+  "2026-06-07": [
+    calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+  ],
+  "2026-06-14": [
+    calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
+  ],
+}
+
+function deepMlRange(start: number) {
+  const end = Math.min(start + 2, 136)
+  const format = (value: number) => String(value).padStart(3, "0")
+  return start === end ? format(start) : `${format(start)}-${format(end)}`
+}
+
+function may4Plan(): DayPlan {
+  return {
+    date: "2026-05-04",
     items: [
-      deepMl(
-        "005",
-        "10:00",
-        "11:00",
-        "Completed on April 30. The rest of the original April 30 workload was moved downstream.",
-        "COMPLETED"
+      calendarBlock("Get ready and go to MPK26", "08:00", "08:30", "Morning setup and commute to MPK26."),
+      calendarBlock("UPenn research advising meeting", "08:40", "09:00", "Research advising meeting."),
+      item("Write email to UChicago interviewer", "REVIEW", "REVIEW", "09:00", "09:30", "Draft and send the interviewer email."),
+      deepMl("012-016", "09:30", "10:30", "One-hour cap: solve five playlist problems and mark each status."),
+      calendarBlock("Mercor task 1", "10:30", "12:00", "Complete one focused Mercor task."),
+      calendarBlock("Travel to MPK 14, lunch, and manager 1:1", "12:00", "13:30", "Travel to MPK 14, eat lunch, and have 1:1 with manager."),
+      calendarBlock("Fitness class", "14:00", "15:00", "Fitness class."),
+      calendarBlock("Go home and shower", "15:00", "15:30", "Commute home and reset."),
+      item(
+        "Video notes: recommender systems talk",
+        "ML_RECSYS",
+        "VIDEO",
+        "16:00",
+        "17:15",
+        "Take structured notes: core idea, modeling assumptions, metrics, and one interview takeaway.",
+        "https://www.youtube.com/watch?v=UGZRFSqvNng&t=3s"
       ),
+      calendarBlock("Personal website plan and small improvement", "17:15", "18:00", "Make a short plan, then ship one small visible improvement."),
+      item(
+        "Read paper: Matrix Factorization Techniques for Recommender Systems",
+        "ML_RECSYS",
+        "PAPER",
+        "18:00",
+        "19:30",
+        "Foundational RecSys read. Write three bullets on matrix factorization, implicit feedback, and evaluation; capture one interview takeaway.",
+        "https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf"
+      ),
+      calendarBlock("Dinner", "19:30", "20:30", "Dinner."),
+      calendarBlock("Mercor task 2", "20:30", "23:00", "Second focused Mercor block."),
+      item("Browse Substacks", "ML_RECSYS", "READING", "23:00", "23:30", "Light reading habit block before bed; save anything worth deeper reading."),
     ],
-  },
-  normalDay("2026-05-01", "006-010", readingQueue[0], quantQueue[0]),
-  lightDay("2026-05-02", "011-013", readingQueue[1], quantQueue[1]),
-  {
-    date: "2026-05-03",
-    items: [
-      deepMl("014-016", "08:00", "09:30", "Light Sunday block before Codestar."),
-      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item(readingQueue[2], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
-      item(quantQueue[2], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
-      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
-    ],
-  },
-  normalDay("2026-05-04", "017-021", readingQueue[3], quantQueue[3], [
-    item("Film UChicago 1-minute video", "OTHER", "PROJECT", "13:30", "14:30", "Record the final take and save it."),
-    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
-  ]),
-  normalDay("2026-05-05", "022-026", readingQueue[4], quantQueue[4]),
-  normalDay("2026-05-06", "027-031", readingQueue[5], quantQueue[5]),
-  travelDay("2026-05-07"),
-  travelDay("2026-05-08"),
-  travelDay("2026-05-09"),
-  travelDay("2026-05-10", true),
-  travelDay("2026-05-11"),
-  normalDay("2026-05-12", "032-036", readingQueue[6], quantQueue[6]),
-  lightDay("2026-05-13", "037-039", readingQueue[7], quantQueue[7]),
-  lightDay("2026-05-14", "040-042", readingQueue[8], quantQueue[8]),
-  lightDay("2026-05-15", "043-045", readingQueue[9], quantQueue[9]),
-  lightDay("2026-05-16", "046-048", readingQueue[10], quantQueue[10]),
-  {
-    date: "2026-05-17",
-    items: [
-      deepMl("049-051", "08:00", "09:30", "Light Sunday block before Codestar."),
-      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item(readingQueue[11], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
-      item(quantQueue[11], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
-      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
-    ],
-  },
-  lightDay("2026-05-18", "052-054", readingQueue[12], quantQueue[12]),
-  lightDay("2026-05-19", "055-057", readingQueue[13], quantQueue[13]),
-  lightDay("2026-05-20", "058-060", readingQueue[14], quantQueue[14]),
-  lightDay("2026-05-21", "061-063", readingQueue[15], quantQueue[15]),
-  lightDay("2026-05-22", "064-066", readingQueue[16], quantQueue[16]),
-  lightDay("2026-05-23", "067-069", readingQueue[17], quantQueue[17]),
-  {
-    date: "2026-05-24",
-    items: [
-      deepMl("070-072", "08:00", "09:30", "Light Sunday block before Codestar."),
-      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item(readingQueue[18], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
-      item(quantQueue[18], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
-      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
-    ],
-  },
-  normalDay("2026-05-25", "073-077", readingQueue[0], quantQueue[0]),
-  normalDay("2026-05-26", "078-082", readingQueue[1], quantQueue[1]),
-  normalDay("2026-05-27", "083-087", readingQueue[2], quantQueue[2]),
-  normalDay("2026-05-28", "088-092", readingQueue[3], quantQueue[3]),
-  normalDay("2026-05-29", "093-097", readingQueue[4], quantQueue[4], [
-    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
-  ]),
-  normalDay("2026-05-30", "098-102", readingQueue[5], quantQueue[5]),
-  {
-    date: "2026-05-31",
-    items: [
-      deepMl("103-105", "08:00", "09:30", "Light Sunday block before Codestar."),
-      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item(readingQueue[6], "ML_RECSYS", "READING", "16:30", "17:00", "Short annotated read."),
-      item(quantQueue[6], "MATH_STATS", "REVIEW", "17:15", "17:45", "Short drill block."),
-      item("Daily review", "REVIEW", "REVIEW", "18:00", "18:15", "Log carryovers."),
-    ],
-  },
-  normalDay("2026-06-01", "106-110", readingQueue[7], quantQueue[7]),
-  normalDay("2026-06-02", "111-115", readingQueue[8], quantQueue[8]),
-  normalDay("2026-06-03", "116-120", readingQueue[9], quantQueue[9]),
-  normalDay("2026-06-04", "121-125", readingQueue[10], quantQueue[10]),
-  normalDay("2026-06-05", "126-130", readingQueue[11], quantQueue[11], [
-    item("Recruiter admin", "REVIEW", "REVIEW", "15:45", "16:15", "Reply to recruiter emails, confirm availability, and update interview next steps."),
-  ]),
-  normalDay("2026-06-06", "131-135", readingQueue[12], quantQueue[12]),
-  {
-    date: "2026-06-07",
-    items: [
-      deepMl("136", "08:30", "09:00", "Finish the 136-problem playlist."),
-      item("Codestar team meeting", "OTHER", "PROJECT", "10:00", "16:00", "Side project meeting; do not schedule over this."),
-      item("Final review", "REVIEW", "REVIEW", "16:30", "17:30", "Build redo list, top formulas, and next 1-week maintenance plan."),
-    ],
-  },
-]
+  }
+}
+
+function buildSustainableSchedule(): DayPlan[] {
+  const days: DayPlan[] = [may4Plan()]
+
+  let problem = 17
+  let supportIndex = 0
+  let cursor = new Date("2026-05-05T12:00:00.000Z")
+
+  while (problem <= 136) {
+    const date = cursor.toISOString().slice(0, 10)
+    const fixedBlocks = FIXED_BLOCKS[date] ?? []
+
+    if (TRAVEL_DATES.has(date)) {
+      days.push(travelDay(date, date === "2026-05-10"))
+    } else {
+      days.push(studyDay(date, deepMlRange(problem), supportIndex, fixedBlocks))
+      problem += 3
+      supportIndex += 1
+    }
+
+    cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
+  }
+
+  const finalDay = days[days.length - 1]
+  if (finalDay) {
+    finalDay.items.push(
+      item(
+        "Final review",
+        "REVIEW",
+        "REVIEW",
+        "13:15",
+        "14:00",
+        "Build redo list, top formulas, and next 1-week maintenance plan."
+      )
+    )
+  }
+
+  return days
+}
+
+const schedule: DayPlan[] = buildSustainableSchedule()
 
 const ROADMAPS = [
   { title: "Deep-ML Practice", domain: "LEETCODE" as Domain, description: "136-problem Deep-ML playlist completion sprint at a sustainable pace", priority: 0 },
@@ -312,6 +379,20 @@ function pickRoadmapTitle(domain: Domain) {
 
 const SEEDED_TITLE_PATTERNS = [
   /^Deep-ML (?:\d{3}|\d{3}-\d{3})$/,
+  /^DeepMind Interview Prep collection$/,
+  /^Progress reset$/,
+  /^Get ready and go to MPK26$/,
+  /^UPenn research advising meeting$/,
+  /^Write email to UChicago interviewer$/,
+  /^Mercor task$/,
+  /^Travel to MPK 14, lunch, and manager 1:1$/,
+  /^Fitness class$/,
+  /^Go home and shower$/,
+  /^Video notes: recommender systems talk$/,
+  /^Personal website plan and small improvement$/,
+  /^Read paper: Matrix Factorization Techniques for Recommender Systems$/,
+  /^Dinner$/,
+  /^Browse Substacks$/,
   /^Netflix /,
   /^RecSys /,
   /^Recommendations /,
@@ -380,12 +461,19 @@ async function main() {
   }
 
   const activeRoadmapIds = Object.values(roadmapMap)
-  const scheduledDates = schedule.map((day) => new Date(`${day.date}T09:00:00.000Z`))
+  const lastScheduleDate = schedule[schedule.length - 1]?.date
+  const cleanupStart = new Date("2026-04-30T00:00:00.000Z")
+  const cleanupEnd = new Date(
+    new Date(`${lastScheduleDate}T00:00:00.000Z`).getTime() + 2 * 24 * 60 * 60 * 1000
+  )
 
   const existingSeededItems = await db.roadmapItem.findMany({
     where: {
       roadmapId: { in: activeRoadmapIds },
-      scheduledDate: { in: scheduledDates },
+      scheduledDate: {
+        gte: cleanupStart,
+        lt: cleanupEnd,
+      },
       sessions: { none: {} },
     },
     select: { id: true, title: true },
@@ -424,7 +512,8 @@ async function main() {
         description: scheduleItem.description,
         type: scheduleItem.type,
         url: scheduleItem.url,
-        estimatedMinutes: duration(scheduleItem.start, scheduleItem.end),
+        estimatedMinutes:
+          scheduleItem.estimatedMinutes ?? duration(scheduleItem.start, scheduleItem.end),
         scheduledStartMinutes: start,
         scheduledEndMinutes: end,
         difficulty: scheduleItem.difficulty,

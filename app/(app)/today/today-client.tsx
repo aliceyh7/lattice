@@ -742,7 +742,7 @@ export function TodayClient({
         <div>
           <p className="text-xs text-muted-foreground">Remaining</p>
           <p className="text-lg font-semibold">
-            {Math.round(totalMinutes / 60)}h {totalMinutes % 60}m
+            {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m
           </p>
         </div>
         <Separator orientation="vertical" className="hidden h-10 sm:block" />
