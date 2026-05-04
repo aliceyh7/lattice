@@ -346,23 +346,21 @@ function TaskCard({
   const meta = DOMAIN_META[item.roadmap.domain]
 
   return (
-    <Card
-      className={`transition-opacity ${isDone || isSkipped ? "opacity-50" : ""}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0 flex-1">
+    <Card className={`transition-opacity ${isDone || isSkipped ? "opacity-50" : ""}`}>
+      <CardContent className="px-3 py-2.5">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex min-w-0 flex-1 items-start gap-2.5">
             <div className="mt-0.5 shrink-0">
               {isDone ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground" />
+                <Circle className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5 mb-1">
+              <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
                 <Badge
-                  className={`${meta.bg} ${meta.color} border-0 text-[10px] font-medium`}
+                  className={`${meta.bg} ${meta.color} h-5 border-0 px-1.5 text-[10px] font-medium`}
                 >
                   {meta.label}
                 </Badge>
@@ -373,12 +371,12 @@ function TaskCard({
                 </span>
               </div>
               {item.description && (
-                <p className="mb-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
+                <p className="mb-1.5 whitespace-pre-line text-xs leading-5 text-muted-foreground">
                   {item.description}
                 </p>
               )}
               {needsBrief && (
-                <div className="mb-2 flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="mb-1.5 flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>
                     This item needs a concrete brief before starting: define the
@@ -422,11 +420,11 @@ function TaskCard({
             </div>
           </div>
           {isDone || isSkipped ? (
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex shrink-0 items-center gap-1">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
                 title="Edit task"
                 disabled={isPending}
                 onClick={() => setIsEditing(true)}
@@ -436,7 +434,7 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                 title="Delete task"
                 disabled={isPending}
                 onClick={handleDelete}
@@ -446,7 +444,7 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 gap-1 text-xs"
+                className="h-6 gap-1 px-2 text-xs"
                 title="Reset to todo"
                 disabled={isPending}
                 onClick={() => handleAction("TODO")}
@@ -456,11 +454,11 @@ function TaskCard({
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex shrink-0 items-center gap-1">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
                 title="Edit task"
                 disabled={isPending}
                 onClick={() => setIsEditing(true)}
@@ -470,7 +468,7 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                 title="Delete task"
                 disabled={isPending}
                 onClick={handleDelete}
@@ -480,7 +478,7 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
                 title="Skip"
                 disabled={isPending}
                 onClick={() => handleAction("SKIPPED")}
@@ -490,7 +488,7 @@ function TaskCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-6 w-6 p-0"
                 title="Move to tomorrow"
                 disabled={isPending}
                 onClick={() => handleAction("DEFERRED")}
@@ -499,7 +497,7 @@ function TaskCard({
               </Button>
               <Button
                 size="sm"
-                className="h-7 gap-1 text-xs"
+                className="h-6 gap-1 px-2 text-xs"
                 disabled={isPending}
                 onClick={handleStart}
               >
@@ -677,7 +675,7 @@ export function TodayClient({
   }, [hasExplicitDate, router, selectedDate])
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-3xl space-y-4 px-5 py-5">
       {/* Header */}
       <div>
         <div className="flex items-start justify-between gap-3">
@@ -722,7 +720,7 @@ export function TodayClient({
       </div>
 
       {/* Activity strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-1.5">
         <div className="flex items-center gap-2 text-sm">
           <Flame className="h-4 w-4 text-amber-500" />
           <span className="font-medium">
@@ -760,17 +758,17 @@ export function TodayClient({
       </div>
 
       {/* Stats bar */}
-      <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center sm:gap-6">
+      <div className="grid gap-3 rounded-lg border bg-card p-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-center sm:gap-5">
         <div>
           <p className="text-xs text-muted-foreground">Remaining</p>
-          <p className="text-lg font-semibold">
+          <p className="text-base font-semibold">
             {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m
           </p>
         </div>
-        <Separator orientation="vertical" className="hidden h-10 sm:block" />
+        <Separator orientation="vertical" className="hidden h-8 sm:block" />
         <div>
           <p className="text-xs text-muted-foreground">Progress</p>
-          <p className="text-lg font-semibold">
+          <p className="text-base font-semibold">
             {stats.completedToday}/{stats.totalToday}
           </p>
         </div>
@@ -783,10 +781,10 @@ export function TodayClient({
         </div>
         {dueReviews > 0 && (
           <>
-            <Separator orientation="vertical" className="hidden h-10 sm:block" />
+            <Separator orientation="vertical" className="hidden h-8 sm:block" />
             <div>
               <p className="text-xs text-muted-foreground">Reviews due</p>
-              <p className="text-lg font-semibold flex items-center gap-1">
+              <p className="flex items-center gap-1 text-base font-semibold">
                 <RotateCcw className="h-4 w-4 text-amber-500" />
                 {dueReviews}
               </p>
@@ -821,7 +819,7 @@ export function TodayClient({
           <p className="text-sm mt-1">Check your roadmaps or import a schedule.</p>
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {chronologicalItems.map((item) => (
             <TaskCard
               key={item.id}
