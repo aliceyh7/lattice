@@ -144,6 +144,20 @@ function timeRangeLabel(item: ItemWithRelations) {
   return null
 }
 
+function sortItemsChronologically(items: ItemWithRelations[]) {
+  return [...items].sort((a, b) => {
+    const aStart = a.scheduledStartMinutes ?? Number.POSITIVE_INFINITY
+    const bStart = b.scheduledStartMinutes ?? Number.POSITIVE_INFINITY
+    if (aStart !== bStart) return aStart - bStart
+
+    const aEnd = a.scheduledEndMinutes ?? Number.POSITIVE_INFINITY
+    const bEnd = b.scheduledEndMinutes ?? Number.POSITIVE_INFINITY
+    if (aEnd !== bEnd) return aEnd - bEnd
+
+    return a.title.localeCompare(b.title)
+  })
+}
+
 function summarizeNote(markdown: string) {
   const lines = noteToPlainText(markdown)
     .split(/\r?\n/)
@@ -329,6 +343,7 @@ function TaskCard({
   }
 
   const timeLabel = timeRangeLabel(item)
+  const meta = DOMAIN_META[item.roadmap.domain]
 
   return (
     <Card
@@ -346,6 +361,11 @@ function TaskCard({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                <Badge
+                  className={`${meta.bg} ${meta.color} border-0 text-[10px] font-medium`}
+                >
+                  {meta.label}
+                </Badge>
                 <span
                   className={`text-sm font-medium ${isDone ? "line-through text-muted-foreground" : ""}`}
                 >
@@ -636,7 +656,9 @@ export function TodayClient({
       ? Math.round((stats.completedToday / stats.totalToday) * 100)
       : 0
 
-  const orderedDomains = DOMAIN_ORDER.filter((d) => grouped[d]?.length)
+  const chronologicalItems = sortItemsChronologically(
+    DOMAIN_ORDER.flatMap((domain) => grouped[domain] ?? [])
+  )
   const [isAddingTask, setIsAddingTask] = useState(false)
 
   useEffect(() => {
@@ -793,47 +815,21 @@ export function TodayClient({
         />
       )}
 
-      {orderedDomains.length === 0 ? (
+      {chronologicalItems.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg font-medium">No tasks scheduled for today.</p>
           <p className="text-sm mt-1">Check your roadmaps or import a schedule.</p>
         </div>
       ) : (
-        orderedDomains.map((domain) => {
-          const meta = DOMAIN_META[domain]
-          const items = grouped[domain]!
-          return (
-            <div key={domain} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge
-                  className={`${meta.bg} ${meta.color} border-0 font-medium`}
-                >
-                  {meta.label}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {items.filter((i) => i.status === "COMPLETED").length}/
-                  {items.length} done ·{" "}
-                  {items
-                    .filter(
-                      (i) =>
-                        i.status !== "COMPLETED" && i.status !== "SKIPPED"
-                    )
-                    .reduce((a, i) => a + i.estimatedMinutes, 0)}
-                  m left
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {items.map((item) => (
-                  <TaskCard
-                    key={item.id}
-                    item={item}
-                    selectedDate={selectedDate}
-                  />
-                ))}
-              </div>
-            </div>
-          )
-        })
+        <div className="space-y-1.5">
+          {chronologicalItems.map((item) => (
+            <TaskCard
+              key={item.id}
+              item={item}
+              selectedDate={selectedDate}
+            />
+          ))}
+        </div>
       )}
 
       {/* Notes summary */}
