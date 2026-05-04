@@ -256,6 +256,24 @@ const TRAVEL_DATES = new Set([
 ])
 
 const FIXED_BLOCKS: Record<string, ScheduleItem[]> = {
+  "2026-05-05": [
+    item(
+      "ML system design interview plan",
+      "ML_RECSYS",
+      "PROJECT",
+      "13:15",
+      "14:15",
+      "Make a concrete interview prep plan: identify 5 core ML system design prompts, define reusable answer structure, list metrics/tradeoffs, and pick the first mock prompt."
+    ),
+    item(
+      "UChicago video interview prep",
+      "REVIEW",
+      "PROJECT",
+      "14:30",
+      "16:30",
+      "Two-hour prep block for the video interview due May 8: outline talking points, write concise story bullets, rehearse aloud, and note the final filming checklist."
+    ),
+  ],
   "2026-05-17": [
     calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
   ],
@@ -384,7 +402,9 @@ const SEEDED_TITLE_PATTERNS = [
   /^Get ready and go to MPK26$/,
   /^UPenn research advising meeting$/,
   /^Write email to UChicago interviewer$/,
-  /^Mercor task$/,
+  /^Mercor task(?: \d)?$/,
+  /^ML system design interview plan$/,
+  /^UChicago video interview prep$/,
   /^Travel to MPK 14, lunch, and manager 1:1$/,
   /^Fitness class$/,
   /^Go home and shower$/,
