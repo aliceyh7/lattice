@@ -6,6 +6,7 @@ import {
   getDateStringInTimeZone,
   getUtcStartOfLocalDate,
 } from "@/lib/local-date"
+import { noteToPlainText } from "@/lib/note-content"
 import { getUser } from "@/lib/user"
 import { revalidatePath } from "next/cache"
 import type { Domain, ItemType } from "@prisma/client"
@@ -159,7 +160,11 @@ export async function startSession(itemId: string): Promise<string> {
   return session.id
 }
 
-export async function updateDailyNote(noteId: string, bodyMarkdown: string) {
+export async function updateDailyNote(
+  noteId: string,
+  title: string,
+  bodyMarkdown: string
+) {
   const user = await getUser()
 
   const note = await db.note.findFirst({
@@ -172,8 +177,76 @@ export async function updateDailyNote(noteId: string, bodyMarkdown: string) {
 
   await db.note.update({
     where: { id: noteId },
-    data: { bodyMarkdown },
+    data: {
+      title: title.trim() || null,
+      bodyMarkdown,
+    },
   })
+
+  revalidatePath("/today")
+  revalidatePath("/publish")
+}
+
+export async function deleteDailyNote(noteId: string) {
+  const user = await getUser()
+
+  const note = await db.note.findFirst({
+    where: {
+      id: noteId,
+      session: { userId: user.id },
+    },
+  })
+  if (!note) throw new Error("Note not found")
+
+  await db.$transaction([
+    db.quizCard.updateMany({
+      where: { noteId },
+      data: { noteId: null },
+    }),
+    db.note.delete({ where: { id: noteId } }),
+  ])
+
+  revalidatePath("/today")
+  revalidatePath("/publish")
+}
+
+export async function mergeDailyNote(sourceNoteId: string, targetNoteId: string) {
+  if (sourceNoteId === targetNoteId) {
+    throw new Error("Choose a different note to merge into")
+  }
+
+  const user = await getUser()
+  const notes = await db.note.findMany({
+    where: {
+      id: { in: [sourceNoteId, targetNoteId] },
+      session: { userId: user.id },
+    },
+  })
+  const sourceNote = notes.find((note) => note.id === sourceNoteId)
+  const targetNote = notes.find((note) => note.id === targetNoteId)
+  if (!sourceNote || !targetNote) throw new Error("Note not found")
+
+  const sourceTitle = sourceNote.title?.trim() || "Merged note"
+  const targetBody = noteToPlainText(targetNote.bodyMarkdown)
+  const sourceBody = noteToPlainText(sourceNote.bodyMarkdown)
+  const mergedBody = [
+    targetBody,
+    sourceBody ? `## ${sourceTitle}\n\n${sourceBody}` : `## ${sourceTitle}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+
+  await db.$transaction([
+    db.note.update({
+      where: { id: targetNoteId },
+      data: { bodyMarkdown: mergedBody },
+    }),
+    db.quizCard.updateMany({
+      where: { noteId: sourceNoteId },
+      data: { noteId: targetNoteId },
+    }),
+    db.note.delete({ where: { id: sourceNoteId } }),
+  ])
 
   revalidatePath("/today")
   revalidatePath("/publish")

@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { ResourceBadge } from "@/components/resource-preview"
@@ -31,16 +38,19 @@ import {
   Undo2,
   X,
   AlertTriangle,
+  GitMerge,
   Pencil,
   Plus,
   Trash2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import {
   createCalendarItem,
   deleteCalendarItem,
+  deleteDailyNote,
+  mergeDailyNote,
   startSession,
   updateCalendarItem,
   updateDailyNote,
@@ -514,28 +524,83 @@ function TaskCard({
 
 function DailyNoteCard({
   note,
+  notes,
 }: {
   note: Props["notes"][number]
+  notes: Props["notes"]
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
-  const [value, setValue] = useState(note.bodyMarkdown)
+  const [titleValue, setTitleValue] = useState(note.title)
+  const [bodyValue, setBodyValue] = useState(noteToPlainText(note.bodyMarkdown))
+  const mergeTargets = useMemo(
+    () => notes.filter((candidate) => candidate.id !== note.id),
+    [note.id, notes]
+  )
+  const [mergeTargetId, setMergeTargetId] = useState(mergeTargets[0]?.id ?? "")
   const [isPending, startTransition] = useTransition()
   const meta = note.domain ? DOMAIN_META[note.domain] : null
   const summary = summarizeNote(note.bodyMarkdown)
 
+  useEffect(() => {
+    if (isEditing) return
+    setTitleValue(note.title)
+    setBodyValue(noteToPlainText(note.bodyMarkdown))
+  }, [isEditing, note.bodyMarkdown, note.title])
+
+  useEffect(() => {
+    if (mergeTargets.some((target) => target.id === mergeTargetId)) return
+    setMergeTargetId(mergeTargets[0]?.id ?? "")
+  }, [mergeTargetId, mergeTargets])
+
   function save() {
     startTransition(async () => {
-      await updateDailyNote(note.id, value)
-      setIsEditing(false)
-      router.refresh()
-      toast.success("Note updated")
+      try {
+        await updateDailyNote(note.id, titleValue, bodyValue)
+        setIsEditing(false)
+        router.refresh()
+        toast.success("Note updated")
+      } catch {
+        toast.error("Could not update note")
+      }
     })
   }
 
   function cancel() {
-    setValue(note.bodyMarkdown)
+    setTitleValue(note.title)
+    setBodyValue(noteToPlainText(note.bodyMarkdown))
     setIsEditing(false)
+  }
+
+  function deleteNote() {
+    if (!window.confirm("Delete this daily note?")) return
+
+    startTransition(async () => {
+      try {
+        await deleteDailyNote(note.id)
+        router.refresh()
+        toast.success("Note deleted")
+      } catch {
+        toast.error("Could not delete note")
+      }
+    })
+  }
+
+  function mergeNote() {
+    if (!mergeTargetId) return
+    const target = notes.find((candidate) => candidate.id === mergeTargetId)
+    const targetTitle = target?.title ?? "the selected note"
+    if (!window.confirm(`Merge this note into "${targetTitle}" and delete this card?`)) return
+
+    startTransition(async () => {
+      try {
+        await mergeDailyNote(note.id, mergeTargetId)
+        router.refresh()
+        toast.success("Notes merged")
+      } catch {
+        toast.error("Could not merge notes")
+      }
+    })
   }
 
   return (
@@ -576,25 +641,52 @@ function DailyNoteCard({
                 </Button>
               </>
             ) : (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  disabled={isPending}
+                  title="Delete note"
+                  onClick={deleteNote}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
           </div>
         </div>
 
         {isEditing ? (
-          <Textarea
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            className="min-h-56 resize-y font-mono text-xs leading-relaxed"
-          />
+          <div className="space-y-3">
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Title</span>
+              <input
+                value={titleValue}
+                onChange={(event) => setTitleValue(event.target.value)}
+                className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Content</span>
+              <Textarea
+                value={bodyValue}
+                onChange={(event) => setBodyValue(event.target.value)}
+                className="min-h-56 resize-y font-mono text-xs leading-relaxed"
+              />
+            </label>
+          </div>
         ) : (
           <>
             <div>
@@ -627,6 +719,37 @@ function DailyNoteCard({
 
         {note.roadmapTitle && (
           <p className="text-xs text-muted-foreground">{note.roadmapTitle}</p>
+        )}
+
+        {mergeTargets.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+            <Select
+              value={mergeTargetId}
+              onValueChange={(value) => setMergeTargetId(value ?? "")}
+            >
+              <SelectTrigger size="sm" className="min-w-0 max-w-full flex-1">
+                <SelectValue placeholder="Merge into..." />
+              </SelectTrigger>
+              <SelectContent>
+                {mergeTargets.map((target) => (
+                  <SelectItem key={target.id} value={target.id}>
+                    {target.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 text-xs"
+              disabled={isPending || !mergeTargetId}
+              onClick={mergeNote}
+            >
+              <GitMerge className="h-3.5 w-3.5" />
+              Merge
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -859,7 +982,7 @@ export function TodayClient({
         ) : (
           <div className="space-y-2">
             {notes.map((note) => (
-              <DailyNoteCard key={note.id} note={note} />
+              <DailyNoteCard key={note.id} note={note} notes={notes} />
             ))}
           </div>
         )}
