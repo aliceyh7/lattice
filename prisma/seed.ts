@@ -415,6 +415,10 @@ function pickRoadmapTitle(domain: Domain) {
 const SEEDED_TITLE_PATTERNS = [
   /^Deep-ML (?:\d{3}|\d{3}-\d{3})$/,
   /^DeepMind Interview Prep collection$/,
+  /^Python Drill /,
+  /^Karpathy /,
+  /^3B1B Linalg /,
+  /^Project: matrix factorization /,
   /^Progress reset$/,
   /^Get ready and go to MPK26$/,
   /^UPenn research advising meeting$/,
@@ -545,7 +549,11 @@ async function main() {
           title: scheduleItem.title,
           scheduledDate,
         },
+        include: {
+          sessions: { select: { id: true } },
+        },
       })
+      const hasSessionHistory = Boolean(existing?.sessions.length)
       const data = {
         roadmapId,
         title: scheduleItem.title,
@@ -557,7 +565,7 @@ async function main() {
         scheduledStartMinutes: start,
         scheduledEndMinutes: end,
         difficulty: scheduleItem.difficulty,
-        status: scheduleItem.status ?? "TODO",
+        status: scheduleItem.status ?? (hasSessionHistory ? existing!.status : "TODO"),
         scheduledDate,
         sequenceOrder: start ?? index,
       }
