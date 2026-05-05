@@ -11,7 +11,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
@@ -541,6 +540,8 @@ function DailyNoteCard({
   const [isPending, startTransition] = useTransition()
   const meta = note.domain ? DOMAIN_META[note.domain] : null
   const summary = summarizeNote(note.bodyMarkdown)
+  const mergeTargetTitle =
+    mergeTargets.find((target) => target.id === mergeTargetId)?.title ?? "Merge into..."
 
   useEffect(() => {
     if (isEditing) return
@@ -728,7 +729,9 @@ function DailyNoteCard({
               onValueChange={(value) => setMergeTargetId(value ?? "")}
             >
               <SelectTrigger size="sm" className="min-w-0 max-w-full flex-1">
-                <SelectValue placeholder="Merge into..." />
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {mergeTargetTitle}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 {mergeTargets.map((target) => (

@@ -290,7 +290,6 @@ function may4Plan(): DayPlan {
       calendarBlock("UPenn research advising meeting", "08:40", "09:00", "Research advising meeting."),
       item("Write email to UChicago interviewer", "REVIEW", "REVIEW", "09:00", "09:30", "Draft and send the interviewer email."),
       deepMl("012-016", "09:30", "10:30", "One-hour cap: solve five playlist problems and mark each status."),
-      calendarBlock("Mercor task 1", "10:30", "12:00", "Complete one focused Mercor task."),
       calendarBlock("Travel to MPK 14, lunch, and manager 1:1", "12:00", "13:30", "Travel to MPK 14, eat lunch, and have 1:1 with manager."),
       calendarBlock("Fitness class", "14:00", "15:00", "Fitness class."),
       calendarBlock("Go home and shower", "15:00", "15:30", "Commute home and reset."),
@@ -303,7 +302,6 @@ function may4Plan(): DayPlan {
         "Take structured notes: core idea, modeling assumptions, metrics, and one interview takeaway.",
         "https://www.youtube.com/watch?v=UGZRFSqvNng&t=3s"
       ),
-      calendarBlock("Personal website plan and small improvement", "17:15", "18:00", "Make a short plan, then ship one small visible improvement."),
       item(
         "Read paper: Matrix Factorization Techniques for Recommender Systems",
         "ML_RECSYS",
@@ -351,6 +349,12 @@ function may5Plan(): DayPlan {
         "Two-hour video interview block: outline talking points, write concise story bullets, rehearse aloud, and note the final filming checklist."
       ),
       calendarBlock("Mercor task", "20:00", "23:59", "Four-hour focused Mercor work block."),
+      {
+        title: "Personal website plan and small improvement",
+        domain: "OTHER",
+        type: "PROJECT",
+        description: "Make a short plan, then ship one small visible improvement.",
+      },
     ],
   }
 }
