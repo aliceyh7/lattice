@@ -256,24 +256,6 @@ const TRAVEL_DATES = new Set([
 ])
 
 const FIXED_BLOCKS: Record<string, ScheduleItem[]> = {
-  "2026-05-05": [
-    item(
-      "ML system design interview plan",
-      "ML_RECSYS",
-      "PROJECT",
-      "13:15",
-      "14:15",
-      "Make a concrete interview prep plan: identify 5 core ML system design prompts, define reusable answer structure, list metrics/tradeoffs, and pick the first mock prompt."
-    ),
-    item(
-      "UChicago video interview prep",
-      "REVIEW",
-      "PROJECT",
-      "14:30",
-      "16:30",
-      "Two-hour prep block for the video interview due May 8: outline talking points, write concise story bullets, rehearse aloud, and note the final filming checklist."
-    ),
-  ],
   "2026-05-17": [
     calendarBlock("Codestar team meeting", "10:00", "16:00", "Side project meeting; do not schedule over this."),
   ],
@@ -338,12 +320,47 @@ function may4Plan(): DayPlan {
   }
 }
 
-function buildSustainableSchedule(): DayPlan[] {
-  const days: DayPlan[] = [may4Plan()]
+function may5Plan(): DayPlan {
+  return {
+    date: "2026-05-05",
+    items: [
+      deepMl("017-022", "08:30", "11:30", "Six-problem sprint: keep each problem to a 30-minute cap and mark Solved, Learn-assisted, Solution-assisted, or Redo."),
+      calendarBlock("Meta meetings", "11:35", "16:00", "Meeting block; do not schedule curriculum work here."),
+      item(
+        "RecSys learning block",
+        "ML_RECSYS",
+        "READING",
+        "16:00",
+        "17:00",
+        "One focused hour on recommender systems foundations. Capture core idea, modeling assumption, metric, and one interview-ready takeaway."
+      ),
+      item(
+        "YouTube + Substack learning",
+        "ML_RECSYS",
+        "READING",
+        "17:00",
+        "18:00",
+        "Watch one relevant ML/RecSys YouTube segment and read one Substack post. Save links and write three bullets worth revisiting."
+      ),
+      item(
+        "UChicago video interview prep",
+        "REVIEW",
+        "PROJECT",
+        "18:00",
+        "20:00",
+        "Two-hour video interview block: outline talking points, write concise story bullets, rehearse aloud, and note the final filming checklist."
+      ),
+      calendarBlock("Mercor task", "20:00", "23:59", "Four-hour focused Mercor work block."),
+    ],
+  }
+}
 
-  let problem = 17
-  let supportIndex = 0
-  let cursor = new Date("2026-05-05T12:00:00.000Z")
+function buildSustainableSchedule(): DayPlan[] {
+  const days: DayPlan[] = [may4Plan(), may5Plan()]
+
+  let problem = 23
+  let supportIndex = 1
+  let cursor = new Date("2026-05-06T12:00:00.000Z")
 
   while (problem <= 136) {
     const date = cursor.toISOString().slice(0, 10)
@@ -403,8 +420,11 @@ const SEEDED_TITLE_PATTERNS = [
   /^UPenn research advising meeting$/,
   /^Write email to UChicago interviewer$/,
   /^Mercor task(?: \d)?$/,
+  /^Meta meetings$/,
   /^ML system design interview plan$/,
+  /^RecSys learning block$/,
   /^UChicago video interview prep$/,
+  /^YouTube \+ Substack learning$/,
   /^Travel to MPK 14, lunch, and manager 1:1$/,
   /^Fitness class$/,
   /^Go home and shower$/,
